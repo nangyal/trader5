@@ -1,0 +1,390 @@
+"""
+CRYPTO TRADING FRAMEWORK - COMPLETE OVERVIEW
+=============================================
+
+A keretrendszer teljes mértékben megfelel a specifikációnak:
+
+✅ KÖVETELMÉNYEK ELLENŐRZÉSE
+----------------------------
+
+1. ✅ Két választható adatforrás:
+   - Backtest: CSV tick adatok (data/ könyvtár)
+   - Websocket: Real-time adatok (classes/realtime.py)
+   - Választás: config.DATA_SOURCE = 'backtest' vagy 'websocket'
+
+2. ✅ Választható kereskedő logika:
+   - trading_logic1.py: HedgingBacktestEngine wrapper
+   - trading_logic2.py: SMA crossover példa
+   - Választás: config.TRADING_LOGIC = 'trading_logic1' vagy 'trading_logic2'
+   - Plugin rendszer: könnyű új logikát hozzáadni
+
+3. ✅ Párhuzamos coin feldolgozás + időszinkronizálás:
+   - Multiprocessing Pool használata (config.NUM_WORKERS)
+   - Tick adatok párhuzamos betöltése több coin-ról
+   - Időszinkronizálás: közös timestamp index létrehozása
+   - classes/training.py BacktestRunner.run() metódus
+
+4. ✅ Timeframe generálás:
+   - Tick → OHLCV resample: 15s, 30s, 1min
+   - config.TIMEFRAMES lista alapján
+   - tick_to_ohlcv() függvény pandas resample-t használ
+
+5. ✅ Multiprocessing:
+   - BacktestRunner: Pool.starmap használat
+   - RealtimeRunner: Process per coin
+   - Pickle-safe worker függvények (module-level)
+   - Minden worker saját classifier példányt hoz létre
+
+6. ✅ Trade naplózás:
+   - CSV: trades_log.csv (minden trade PnL USDT-ben)
+   - Excel: stat/bt_report_*.xlsx (részletes statisztikák)
+   - Konzol: real-time progress és debug info
+
+7. ✅ File struktúra:
+   ✓ config.py
+   ✓ training.py (modell tanítása)
+   ✓ start.py (program indítása)
+   ✓ /classes
+      ✓ training.py (BacktestRunner)
+      ✓ classification.py (Classifier wrapper)
+      ✓ realtime.py (RealtimeRunner)
+   ✓ /trading_logics
+      ✓ trading_logic1.py (HedgingBacktestEngine)
+      ✓ trading_logic2.py (SMA crossover)
+   ✓ /data (CSV tick adatok)
+   ✓ /stat (Excel statisztikák)
+   ✓ /old (korábbi verzió - csak referencia)
+
+8. ✅ Független az /old könyvtártól:
+   - HedgingBacktestEngine → utils/backtest_engine.py
+   - Classifier wrapper → utils/classifier.py + utils/advanced_classifier.py
+   - Nincs közvetlen import az /old-ból
+
+FÁJLOK ÉS SZEREPÜK
+------------------
+
+ROOT SZINT:
+-----------
+config.py               # Központi konfiguráció
+                        - DATA_SOURCE: 'backtest' vagy 'websocket'
+                        - COINS: feldolgozandó coinok listája
+                        - TIMEFRAMES: ['15s', '30s', '1min']
+                        - TRADING_LOGIC: melyik logikát használja
+                        - NUM_WORKERS: párhuzamos processek száma
+                        - MODEL_PATH: classifier modell helye
+
+start.py                # Program belépési pont
+                        - Betölti config-ot
+                        - Választás DATA_SOURCE alapján:
+                          * backtest → run_backtest()
+                          * websocket → run_realtime()
+                        - Inicializálja TradeLogger-t
+                        - Betölti választott trading logic-ot
+
+training.py             # Modell tanítás
+                        - Betölti historikus adatokat
+                        - Feature extraction
+                        - Classifier.train() hívása
+                        - Modell mentése MODEL_PATH-ra
+
+/classes:
+---------
+training.py             # BacktestRunner osztály
+                        - CSV tick adatok betöltése (find_csv_for_coin)
+                        - Tick → OHLCV resample (tick_to_ohlcv)
+                        - Multiprocessing Pool (process_coin_worker)
+                        - Időszinkronizálás több coin között
+                        - Excel report generálás
+                        - Trade logging koordinálása
+
+classification.py       # Classifier factory
+                        - USE_ADVANCED_CLASSIFIER alapján választ:
+                          * SimpleClassifier (CPU, gyors)
+                          * GPUEnhancedForexClassifier (GPU, teljes)
+                        - load_model_if_exists() metódus
+                        - Egységes interface mindkét implementációhoz
+
+realtime.py             # RealtimeRunner osztály
+                        - Websocket kapcsolat (Binance aggTrade stream)
+                        - Tick buffer minden coin-hoz
+                        - Real-time OHLCV resample
+                        - Multiprocessing: 1 process/coin
+                        - Trading logic hívása on_tick alapon
+
+/trading_logics:
+----------------
+trading_logic1.py       # HedgingBacktestEngine wrapper
+                        - TradingLogic osztály
+                        - __init__(classifier): konstruktor
+                        - run_backtest(coin, tf, ohlc, capital):
+                          * HedgingBacktestEngine példányosítás
+                          * engine.run_backtest() hívás
+                          * Eredmény visszaadása (trades, pnl, stb.)
+
+trading_logic2.py       # SMA crossover példa
+                        - Egyszerű SMA(20) és SMA(50) crossover
+                        - Demonstrációs célra
+                        - Ugyanaz az interface mint logic1
+
+/utils:
+-------
+trade_logger.py         # TradeLogger osztály
+                        - CSV logging: trades_log.csv
+                        - Oszlopok: timestamp, coin, timeframe, 
+                          action, price, qty, pnl_usdt
+                        - Thread-safe írás
+
+backtest_engine.py      # HedgingBacktestEngine (másolt /old-ból)
+                        - 500+ sor teljes implementáció
+                        - Pattern detection, hedging, risk management
+                        - Független, nincs external dependency
+
+classifier.py           # SimpleClassifier implementáció
+                        - Könnyű XGBoost wrapper CPU-ra
+                        - train(), predict(), save_model(), load_model()
+                        - Gyors, kis memory footprint
+
+advanced_classifier.py  # GPU-enabled classifier
+                        - GPUEnhancedForexClassifier osztály
+                        - XGBoost GPU mode: gpu_hist, cuda device
+                        - Teljes feature extraction
+                        - force_gpu=True paraméter load_model-ben
+
+/data:
+------
+Struktúra: data/<COIN>/<timeframe>/
+Pl: data/BTCUSDT/15s/*.csv
+    data/ETHUSDT/1min/*.csv
+
+CSV formátum (tick):
+- time (timestamp milliseconds vagy datetime string)
+- price (float)
+- qty (float)
+
+Vagy standard OHLCV:
+- time, open, high, low, close, volume
+
+/stat:
+------
+Excel reports: bt_report_YYYYMMDD_HHMMSS.xlsx
+Oszlopok:
+- coin
+- timeframe
+- candles (összesen)
+- total_trades
+- total_pnl (USDT)
+- final_capital (USDT)
+
+/models:
+--------
+enhanced_forex_pattern_model.pkl
+- Joblib serialized classifier
+- Tartalmaz: model, label_encoder, scaler, feature_names
+
+HASZNÁLAT
+---------
+
+1. MODELL TANÍTÁS:
+   python training.py
+
+2. BACKTEST FUTTATÁS:
+   python start.py
+   
+   vagy:
+   export DATA_SOURCE=backtest
+   export TRADING_LOGIC=trading_logic1
+   export NUM_WORKERS=4
+   export BACKTEST_INITIAL_CAPITAL=200
+   python start.py
+
+3. REAL-TIME WEBSOCKET:
+   export DATA_SOURCE=websocket
+   export TRADING_LOGIC=trading_logic2
+   python start.py
+
+KONFIGURÁCIÓ PÉLDÁK
+-------------------
+
+# config.py vagy környezeti változók:
+
+DATA_SOURCE = 'backtest'        # vagy 'websocket'
+COINS = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT']
+TIMEFRAMES = ['15s', '30s', '1min']
+TRADING_LOGIC = 'trading_logic1'  # vagy 'trading_logic2'
+NUM_WORKERS = 4
+BACKTEST_INITIAL_CAPITAL = 200.0
+USE_ADVANCED_CLASSIFIER = '1'     # '1' = GPU, '0' = Simple
+
+ÚJ TRADING LOGIC HOZZÁADÁSA
+----------------------------
+
+1. Hozz létre: trading_logics/trading_logic_X.py
+
+2. Template:
+   ```python
+   class TradingLogic:
+       def __init__(self, classifier):
+           self.classifier = classifier
+           # initialize stratégia specifikus paraméterek
+       
+       def run_backtest(self, coin, timeframe, ohlc_df, initial_capital):
+           '''
+           Args:
+               coin: str (pl. 'BTCUSDT')
+               timeframe: str (pl. '15s')
+               ohlc_df: pandas DataFrame (index=time, oszlopok=open,high,low,close,volume)
+               initial_capital: float (USDT)
+           
+           Returns:
+               dict {
+                   'trades': list of dicts,
+                   'total_pnl': float,
+                   'final_capital': float,
+                   'total_trades': int
+               }
+           '''
+           trades = []
+           capital = initial_capital
+           
+           # Implementáld a stratégiát...
+           
+           return {
+               'trades': trades,
+               'total_pnl': capital - initial_capital,
+               'final_capital': capital,
+               'total_trades': len(trades)
+           }
+   ```
+
+3. config.py-ban:
+   TRADING_LOGIC = 'trading_logic_X'
+
+MULTIPROCESSING RÉSZLETEK
+--------------------------
+
+BacktestRunner:
+- Pool.starmap használat
+- process_coin_worker module-level függvény (pickle-safe)
+- Minden worker:
+  * Betölti a classifier-t
+  * Betölti a trading logic-ot
+  * Feldolgozza a coin-t minden timeframe-en
+  * Visszaadja az eredményeket
+- Master process:
+  * Összegyűjti az eredményeket
+  * Logolja a trade-eket
+  * Generálja az Excel report-ot
+
+RealtimeRunner:
+- 1 Process minden coin-hoz
+- Websocket buffer process-enként
+- Tick accumulation → OHLCV resample
+- Trading logic hívása minden új candle-nél
+
+GPU TÁMOGATÁS
+-------------
+
+XGBoost GPU mode:
+- tree_method='gpu_hist'
+- device='cuda'
+- predictor='gpu_predictor'
+
+Aktiválás:
+- USE_ADVANCED_CLASSIFIER='1' (config.py)
+- CUDA és cuDNN telepítése
+- XGBoost GPU build
+
+Memory:
+- Több worker = több GPU memory
+- Adjust NUM_WORKERS based on GPU RAM
+
+NAPLÓZÁS
+--------
+
+Konzol:
+- "Starting backtest..."
+- "Model loaded from ..."
+- "BacktestRunner: running for coins: ..."
+- "Worker: Running BTCUSDT 15s: 1234 candles"
+- "Synchronized index size for 15s: 5678"
+- Progress minden coin/timeframe kombinációra
+
+CSV (trades_log.csv):
+- Real-time trade logging
+- Minden sor egy trade
+- PnL USDT-ben
+
+Excel (stat/bt_report_*.xlsx):
+- Összegzett statisztikák
+- Coin × Timeframe breakdown
+- Total trades, PnL, final capital
+
+FEJLESZTÉSI TIPPEK
+------------------
+
+1. Debug logging:
+   - Minden fontos lépésnél print()
+   - Worker processek is logoln console-ra
+   - Kövesd a flow-t az output alapján
+
+2. Modularitás:
+   - Minden trading logic független
+   - Classifier plugin rendszer
+   - Könnyű új komponenseket hozzáadni
+
+3. Performance:
+   - NUM_WORKERS optimalizálása CPU cores alapján
+   - GPU használat nagy adathalmazoknál
+   - Tick data chunking ha túl nagy
+
+4. Testing:
+   - Kezd kis COINS listával (1-2 coin)
+   - Ellenőrizd a sync-et több coin-nál
+   - Validáld a PnL számításokat
+
+5. Extensibility:
+   - Új exchange: RealtimeRunner.run() módosítás
+   - Új indicator: feature engineering training.py-ban
+   - Új risk management: trading logic-ban
+
+HIBAKERESÉS
+-----------
+
+Pickle errors:
+- Module-level worker függvények használata
+- Ne pass-olj bound methods-ot Pool-nak
+- Import inside worker ha szükséges
+
+GPU errors:
+- Check CUDA availability
+- Verify XGBoost GPU build
+- Monitor GPU memory usage
+
+Sync issues:
+- Check timestamp format (ms vs s)
+- Verify timezone consistency
+- Debug intersection logic
+
+Performance:
+- Profile worker execution time
+- Check I/O bottlenecks (CSV reading)
+- Monitor memory usage
+
+ÖSSZEFOGLALÁS
+-------------
+
+✅ Teljes mértékben megfelel a specifikációnak
+✅ Két adatforrás: backtest (CSV) és websocket
+✅ Választható trading logic (plugin rendszer)
+✅ Multiprocessing: párhuzamos coin feldolgozás
+✅ Időszinkronizálás több coin között
+✅ Timeframe generálás: tick → 15s/30s/1min
+✅ Trade logging: CSV + Excel statisztikák
+✅ Független az /old könyvtártól
+✅ GPU támogatás (optional)
+✅ Részletes console logging
+✅ Modular, bővíthető architektúra
+
+A framework production-ready és könnyen bővíthető új
+stratégiákkal, exchange-ekkel, vagy adatforrásokkal.
+"""

@@ -1,0 +1,98 @@
+✅ Könyvtárak létrehozva/ellenőrizve
+
+================================================================================
+🚀 CRYPTO TRADING FRAMEWORK
+================================================================================
+
+📋 Konfiguráció:
+   Adatforrás: backtest
+   Coinok: BTCUSDT, ETHUSDT
+   Timeframes: 15s, 30s, 1min
+   Workers: 4
+
+💰 Backtest Beállítások:
+   Kezdő tőke: $200.0
+   Adat könyvtár: /home/nangyal/Desktop/v5/data
+   Stat könyvtár: /home/nangyal/Desktop/v5/stat
+   Model: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+
+================================================================================
+BACKTEST MÓD
+================================================================================
+
+
+================================================================================
+🚀 BACKTEST INDÍTÁSA (MULTIPROCESSING)
+================================================================================
+
+Coinok: 2
+  • BTCUSDT
+  • ETHUSDT
+
+Timeframes: ['15s', '30s', '1min']
+Kezdő tőke: $200.0
+Workers: 4
+
+================================================================================
+PÁRHUZAMOS FELDOLGOZÁS INDÍTÁSA
+================================================================================
+
+Traceback (most recent call last):
+  File "/home/nangyal/Desktop/v5/backtest.py", line 257, in run_single_coin_backtest
+    sl, tp, direction, params = trading.calculate_pattern_targets(
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nangyal/Desktop/v5/trading_logic.py", line 109, in calculate_pattern_targets
+    atr_pct = (atr / current_price) * 100
+                     ^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'current_price' where it is not associated with a value
+Traceback (most recent call last):
+  File "/home/nangyal/Desktop/v5/backtest.py", line 257, in run_single_coin_backtest
+    sl, tp, direction, params = trading.calculate_pattern_targets(
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nangyal/Desktop/v5/trading_logic.py", line 109, in calculate_pattern_targets
+    atr_pct = (atr / current_price) * 100
+                     ^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'current_price' where it is not associated with a value
+
+[Worker 2] 🚀 ETHUSDT backtest indítása...
+  📥 ETHUSDT: 1 CSV file betöltése...
+  ✅ ETHUSDT: 44,640 tick betöltve (2025-10-01 00:00:00 - 2025-10-31 23:59:00)
+Model loaded from /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl (device: CPU)
+  ✅ Model betöltve: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+  📊 ETHUSDT - 15s timeframe feldolgozása...
+    Candles: 44,640 (2025-10-01 00:00:00 - 2025-10-31 23:59:00)
+    Quality signals: 6789
+
+  ❌ ETHUSDT hiba: cannot access local variable 'current_price' where it is not associated with a value
+
+[Worker 1] 🚀 BTCUSDT backtest indítása...
+  📥 BTCUSDT: 1 CSV file betöltése...
+  ✅ BTCUSDT: 44,640 tick betöltve (2025-10-01 00:00:00 - 2025-10-31 23:59:00)
+Model loaded from /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl (device: CPU)
+  ✅ Model betöltve: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+  📊 BTCUSDT - 15s timeframe feldolgozása...
+    Candles: 44,640 (2025-10-01 00:00:00 - 2025-10-31 23:59:00)
+    Quality signals: 6900
+
+  ❌ BTCUSDT hiba: cannot access local variable 'current_price' where it is not associated with a value
+
+================================================================================
+✅ BACKTEST BEFEJEZVE
+================================================================================
+
+⚠️  Nincs sikeres backtest
+
+================================================================================
+📊 EXCEL STATISZTIKA GENERÁLÁS
+================================================================================
+
+📊 Excel riport generálása...
+  ✓ Summary sheet
+  ✓ Detailed Results sheet
+  ✓ Per Coin Stats sheet (empty)
+  ✓ Per Timeframe Stats sheet (empty)
+  ✓ Top Performers sheet (empty)
+✅ Excel riport mentve: /home/nangyal/Desktop/v5/stat/backtest_report_20251122_123351.xlsx
+
+✅ Backtest befejezve!
+📄 Excel report: /home/nangyal/Desktop/v5/stat/backtest_report_20251122_123351.xlsx

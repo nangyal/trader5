@@ -1,0 +1,39 @@
+✅ Könyvtárak létrehozva/ellenőrizve
+
+================================================================================
+🚀 CRYPTO TRADING FRAMEWORK
+================================================================================
+
+📋 Konfiguráció:
+   Adatforrás: backtest
+   Coinok: BTCUSDT, ETHUSDT
+   Timeframes: 15s, 30s, 1min
+   Workers: 4
+
+💰 Backtest Beállítások:
+   Kezdő tőke: $200.0
+   Adat könyvtár: /home/nangyal/Desktop/v5/data
+   Stat könyvtár: /home/nangyal/Desktop/v5/stat
+   Model: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+
+================================================================================
+BACKTEST MÓD
+================================================================================
+
+
+================================================================================
+🚀 BACKTEST INDÍTÁSA (MULTIPROCESSING)
+================================================================================
+
+Coinok: 2
+  • BTCUSDT
+  • ETHUSDT
+
+Timeframes: ['15s', '30s', '1min']
+Kezdő tőke: $200.0
+Workers: 4
+
+================================================================================
+PÁRHUZAMOS FELDOLGOZÁS INDÍTÁSA
+================================================================================
+

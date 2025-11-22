@@ -1,0 +1,245 @@
+Starting backtest...
+BacktestRunner: running for coins: ['BTCUSDT', 'ETHUSDT']
+🚀 Worker [BTCUSDT]: STARTED
+📁 Worker [BTCUSDT]: Found 1 CSV files
+🔧 Worker [BTCUSDT]: Loading model with GPU...
+Model loaded from /home/nangyal/Desktop/v5/old2/models/enhanced_forex_pattern_model.pkl (device: cuda:0)
+CPU mode
+Classifier loaded from /home/nangyal/Desktop/v5/old2/models/enhanced_forex_pattern_model.pkl
+✅ Worker [BTCUSDT]: Model loaded
+📦 Worker [BTCUSDT]: Importing trading logic...
+✅ Worker [BTCUSDT]: Trading logic ready
+🔄 Worker [BTCUSDT]: Starting CSV processing loop...
+📄 Worker [BTCUSDT]: Processing CSV 1/1: BTCUSDT-trades-2025-10_1min.csv
+📊 Worker [BTCUSDT]: Loaded 44640 ticks from BTCUSDT-trades-2025-10_1min.csv
+⏱️  Worker [BTCUSDT]: Processing timeframe 15s...
+📈 Worker [BTCUSDT]: Generated 179 OHLC bars for 15s
+🚀 Worker [BTCUSDT]: Running backtest for 15s...
+🔮 Starting prediction on 179 samples...
+   🎯 GPU device set for prediction
+   Features extracted: (179, 37)
+   Running GPU prediction...
+   ✅ Prediction complete!
+
+=== RUNNING BACKTEST WITH HEDGING ===
+
+✅ Backtest completed!
+🛡️ Hedge activations: 0
+🛡️ Hedge trades executed: 0
+
+======================================================================
+BACKTEST RESULTS WITH HEDGING
+======================================================================
+Initial Capital: $200.00
+Final Capital: $205.40
+Total Return: 2.70%
+Total P&L: $5.40
+----------------------------------------------------------------------
+Main Trades P&L: $5.40
+Hedge Trades P&L: $0.00
+----------------------------------------------------------------------
+Total Trades: 115 (Main: 115, Hedges: 0)
+Winning Trades: 40
+Losing Trades: 75
+Win Rate: 34.78%
+----------------------------------------------------------------------
+Average Win: $0.57
+Average Loss: $0.23
+Profit Factor: 1.31
+Max Drawdown: 5.13%
+Sharpe Ratio: 0.35
+----------------------------------------------------------------------
+
+Pattern Performance:
+                     pnl            
+                     sum  mean count
+pattern                             
+ascending_triangle   5.0  0.08    65
+descending_triangle  0.4  0.01    50
+
+Pattern Win Rates (%):
+pattern
+ascending_triangle     35.38
+descending_triangle    34.00
+dtype: float64
+======================================================================
+✅ Worker [BTCUSDT]: Backtest complete for 15s - 0 trades
+⏱️  Worker [BTCUSDT]: Processing timeframe 30s...
+📈 Worker [BTCUSDT]: Generated 90 OHLC bars for 30s
+🚀 Worker [BTCUSDT]: Running backtest for 30s...
+🔮 Starting prediction on 90 samples...
+   🎯 GPU device set for prediction
+   Features extracted: (90, 37)
+   Running GPU prediction...
+   ✅ Prediction complete!
+
+=== RUNNING BACKTEST WITH HEDGING ===
+
+✅ Backtest completed!
+🛡️ Hedge activations: 0
+🛡️ Hedge trades executed: 0
+
+======================================================================
+BACKTEST RESULTS WITH HEDGING
+======================================================================
+Initial Capital: $200.00
+Final Capital: $199.20
+Total Return: -0.40%
+Total P&L: $-0.80
+----------------------------------------------------------------------
+Main Trades P&L: $-0.80
+Hedge Trades P&L: $0.00
+----------------------------------------------------------------------
+Total Trades: 38 (Main: 38, Hedges: 0)
+Winning Trades: 10
+Losing Trades: 28
+Win Rate: 26.32%
+----------------------------------------------------------------------
+Average Win: $0.80
+Average Loss: $0.31
+Profit Factor: 0.91
+Max Drawdown: 2.99%
+Sharpe Ratio: -0.68
+----------------------------------------------------------------------
+
+Pattern Performance:
+                     pnl           
+                     sum mean count
+pattern                            
+ascending_triangle  -0.8 -0.1     8
+descending_triangle -0.0 -0.0    30
+
+Pattern Win Rates (%):
+pattern
+ascending_triangle       NaN
+descending_triangle    33.33
+dtype: float64
+======================================================================
+✅ Worker [BTCUSDT]: Backtest complete for 30s - 0 trades
+⏱️  Worker [BTCUSDT]: Processing timeframe 1min...
+⚠️  Worker [BTCUSDT]: Insufficient data for 1min (got 45 bars)
+🏁 Worker [BTCUSDT]: COMPLETED - 2 results
+🚀 Worker [ETHUSDT]: STARTED
+📁 Worker [ETHUSDT]: Found 1 CSV files
+🔧 Worker [ETHUSDT]: Loading model with GPU...
+Model loaded from /home/nangyal/Desktop/v5/old2/models/enhanced_forex_pattern_model.pkl (device: cuda:0)
+CPU mode
+Classifier loaded from /home/nangyal/Desktop/v5/old2/models/enhanced_forex_pattern_model.pkl
+✅ Worker [ETHUSDT]: Model loaded
+📦 Worker [ETHUSDT]: Importing trading logic...
+✅ Worker [ETHUSDT]: Trading logic ready
+🔄 Worker [ETHUSDT]: Starting CSV processing loop...
+📄 Worker [ETHUSDT]: Processing CSV 1/1: ETHUSDT-trades-2025-10_1min.csv
+📊 Worker [ETHUSDT]: Loaded 44640 ticks from ETHUSDT-trades-2025-10_1min.csv
+⏱️  Worker [ETHUSDT]: Processing timeframe 15s...
+📈 Worker [ETHUSDT]: Generated 179 OHLC bars for 15s
+🚀 Worker [ETHUSDT]: Running backtest for 15s...
+🔮 Starting prediction on 179 samples...
+   🎯 GPU device set for prediction
+   Features extracted: (179, 37)
+   Running GPU prediction...
+   ✅ Prediction complete!
+
+=== RUNNING BACKTEST WITH HEDGING ===
+
+✅ Backtest completed!
+🛡️ Hedge activations: 0
+🛡️ Hedge trades executed: 0
+
+======================================================================
+BACKTEST RESULTS WITH HEDGING
+======================================================================
+Initial Capital: $200.00
+Final Capital: $204.10
+Total Return: 2.05%
+Total P&L: $4.10
+----------------------------------------------------------------------
+Main Trades P&L: $4.10
+Hedge Trades P&L: $0.00
+----------------------------------------------------------------------
+Total Trades: 106 (Main: 106, Hedges: 0)
+Winning Trades: 30
+Losing Trades: 76
+Win Rate: 28.30%
+----------------------------------------------------------------------
+Average Win: $0.68
+Average Loss: $0.21
+Profit Factor: 1.25
+Max Drawdown: 2.70%
+Sharpe Ratio: 0.24
+----------------------------------------------------------------------
+
+Pattern Performance:
+                     pnl            
+                     sum  mean count
+pattern                             
+ascending_triangle  -1.1 -0.02    56
+descending_triangle  5.2  0.10    50
+
+Pattern Win Rates (%):
+pattern
+ascending_triangle     16.07
+descending_triangle    42.00
+dtype: float64
+======================================================================
+✅ Worker [ETHUSDT]: Backtest complete for 15s - 0 trades
+⏱️  Worker [ETHUSDT]: Processing timeframe 30s...
+📈 Worker [ETHUSDT]: Generated 90 OHLC bars for 30s
+🚀 Worker [ETHUSDT]: Running backtest for 30s...
+🔮 Starting prediction on 90 samples...
+   🎯 GPU device set for prediction
+   Features extracted: (90, 37)
+   Running GPU prediction...
+   ✅ Prediction complete!
+
+=== RUNNING BACKTEST WITH HEDGING ===
+
+✅ Backtest completed!
+🛡️ Hedge activations: 0
+🛡️ Hedge trades executed: 0
+
+======================================================================
+BACKTEST RESULTS WITH HEDGING
+======================================================================
+Initial Capital: $200.00
+Final Capital: $205.80
+Total Return: 2.90%
+Total P&L: $5.80
+----------------------------------------------------------------------
+Main Trades P&L: $5.80
+Hedge Trades P&L: $0.00
+----------------------------------------------------------------------
+Total Trades: 64 (Main: 64, Hedges: 0)
+Winning Trades: 25
+Losing Trades: 39
+Win Rate: 39.06%
+----------------------------------------------------------------------
+Average Win: $0.78
+Average Loss: $0.35
+Profit Factor: 1.42
+Max Drawdown: 2.51%
+Sharpe Ratio: 1.26
+----------------------------------------------------------------------
+
+Pattern Performance:
+                     pnl            
+                     sum  mean count
+pattern                             
+ascending_triangle  -0.2 -0.03     7
+descending_triangle  6.0  0.11    57
+
+Pattern Win Rates (%):
+pattern
+ascending_triangle     14.29
+descending_triangle    42.11
+dtype: float64
+======================================================================
+✅ Worker [ETHUSDT]: Backtest complete for 30s - 0 trades
+⏱️  Worker [ETHUSDT]: Processing timeframe 1min...
+⚠️  Worker [ETHUSDT]: Insufficient data for 1min (got 45 bars)
+🏁 Worker [ETHUSDT]: COMPLETED - 2 results
+Attempting synchronization across coins for timeframes:  ['15s', '30s', '1min']
+Synchronized index size for 15s: 179
+Synchronized index size for 30s: 90
+Synchronized index size for 1min: 45
+Backtest summary saved to /home/nangyal/Desktop/v5/old2/stat/bt_report_20251122_131121.xlsx

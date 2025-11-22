@@ -1,0 +1,11 @@
+pandas
+numpy
+openpyxl
+websocket-client
+websockets
+xgboost
+scikit-learn
+joblib
+ta-lib
+matplotlib
+seaborn

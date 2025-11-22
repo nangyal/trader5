@@ -1,0 +1,61 @@
+✅ Könyvtárak létrehozva/ellenőrizve
+
+================================================================================
+🚀 CRYPTO TRADING FRAMEWORK
+================================================================================
+
+📋 Konfiguráció:
+   Adatforrás: backtest
+   Coinok: ETHUSDT
+   Timeframes: 15s, 30s, 1min
+   Workers: 1
+
+💰 Backtest Beállítások:
+   Kezdő tőke: $200.0
+   Adat könyvtár: /home/nangyal/Desktop/v5/data
+   Stat könyvtár: /home/nangyal/Desktop/v5/stat
+   Model: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+
+================================================================================
+BACKTEST MÓD
+================================================================================
+
+
+================================================================================
+🚀 BACKTEST INDÍTÁSA (MULTIPROCESSING)
+================================================================================
+
+Coinok: 1
+  • ETHUSDT
+
+Timeframes: ['15s', '30s', '1min']
+Kezdő tőke: $200.0
+Workers: 1
+
+================================================================================
+PÁRHUZAMOS FELDOLGOZÁS INDÍTÁSA
+================================================================================
+
+
+================================================================================
+✅ BACKTEST BEFEJEZVE
+================================================================================
+
+Sikeres backtestek: 1/1
+Összes trade: 99
+Átlagos hozam: 9.94%
+
+================================================================================
+📊 EXCEL STATISZTIKA GENERÁLÁS
+================================================================================
+
+📊 Excel riport generálása...
+  ✓ Summary sheet
+  ✓ Detailed Results sheet
+  ✓ Per Coin Stats sheet
+  ✓ Per Timeframe Stats sheet
+  ✓ Top Performers sheet
+✅ Excel riport mentve: /home/nangyal/Desktop/v5/stat/backtest_report_20251122_130555.xlsx
+
+✅ Backtest befejezve!
+📄 Excel report: /home/nangyal/Desktop/v5/stat/backtest_report_20251122_130555.xlsx
