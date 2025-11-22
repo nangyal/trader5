@@ -194,7 +194,7 @@ class TradingLogic:
         
         # Cap position size to prevent over-leveraging
         # With MAX_CONCURRENT_TRADES=3, max 33% per trade ensures 100% total usage
-        max_position_value = current_capital * 0.33
+        max_position_value = current_capital * self.config.MAX_POSITION_SIZE_PCT
         position_value = position_size * entry_price
         
         if position_value > max_position_value:

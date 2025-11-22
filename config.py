@@ -92,6 +92,9 @@ RISK_TIERS = [
 # Maximum egyidejű tradeek - REALISTIC (adjusted to capital limits)
 MAX_CONCURRENT_TRADES = 3  # 3 parallel trades max (3 × 33% = ~100% capital usage)
 
+# Maximum position size per trade (% of current capital)
+MAX_POSITION_SIZE_PCT = 0.33  # 33% - ensures full capital usage with MAX_CONCURRENT_TRADES
+
 # ============================================================================
 # PATTERN TARGETS (STOP LOSS & TAKE PROFIT)
 # ============================================================================
