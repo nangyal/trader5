@@ -184,14 +184,27 @@ PATTERN_FILTERS = {
 
 HEDGING = {
     'enable': True,
-    'hedge_threshold': 0.15,  # 15% drawdown után aktivál hedge-et
-    'hedge_recovery_threshold': 0.05,  # 5% drawdown alatt zárja a hedge-et
-    'hedge_ratio': 0.5,  # Hedge mérete: 50% of total exposure
+    'hedge_threshold': 0.18,  # 18% drawdown után aktivál (emelve 15%-ról)
+    'hedge_recovery_threshold': 0.08,  # 8% drawdown alatt zárja (emelve 5%-ról, gyorsabb close)
+    'hedge_ratio': 0.35,  # Hedge mérete: 35% of total exposure (csökkentve 50%-ról)
     'dynamic_hedge': True,  # Dinamikus threshold volatilitás alapján
     'volatility_window': 20,  # Volatilitás számítási ablak
-    'min_hedge_threshold': 0.10,  # Min threshold (alacsony volatilitás)
+    'min_hedge_threshold': 0.12,  # Min threshold (alacsony volatilitás, emelve 10%-ról)
     'max_hedge_threshold': 0.25,  # Max threshold (magas volatilitás)
     'drawdown_basis': 'equity',  # 'capital' vagy 'equity' (unrealized PnL-lel)
+    
+    # Coin-specific overrides (optional)
+    'coin_overrides': {
+        'ETHUSDT': {
+            'hedge_threshold': 0.22,  # ETHUSDT-nél magasabb threshold (22%)
+            'hedge_recovery_threshold': 0.10,  # Gyorsabb recovery close
+            'hedge_ratio': 0.30,  # Kisebb hedge ratio
+        },
+        'BTCUSDT': {
+            'hedge_threshold': 0.16,  # BTCUSDT jól teljesített, alacsonyabb threshold
+            'hedge_ratio': 0.40,  # Nagyobb hedge ratio
+        }
+    }
 }
 
 # ============================================================================

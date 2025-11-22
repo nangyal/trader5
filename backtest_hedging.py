@@ -494,23 +494,29 @@ def run_hedging_backtest(coins, timeframes, num_workers=None):
     
     print(f"\nWorkers: {num_workers}")
     
-    # Prepare config dict for workers
-    config_dict = {
-        'initial_capital': config.BACKTEST_INITIAL_CAPITAL,
-        'enable_hedging': config.HEDGING['enable'],
-        'hedge_threshold': config.HEDGING['hedge_threshold'],
-        'hedge_recovery_threshold': config.HEDGING['hedge_recovery_threshold'],
-        'hedge_ratio': config.HEDGING['hedge_ratio'],
-        'dynamic_hedge': config.HEDGING['dynamic_hedge'],
-        'volatility_window': config.HEDGING['volatility_window'],
-        'min_hedge_threshold': config.HEDGING['min_hedge_threshold'],
-        'max_hedge_threshold': config.HEDGING['max_hedge_threshold'],
-        'drawdown_basis': config.HEDGING['drawdown_basis'],
-    }
-    
-    # Prepare args
+    # Prepare args with coin-specific config
     args_list = []
     for idx, coin in enumerate(coins):
+        # Base config
+        config_dict = {
+            'initial_capital': config.BACKTEST_INITIAL_CAPITAL,
+            'enable_hedging': config.HEDGING['enable'],
+            'hedge_threshold': config.HEDGING['hedge_threshold'],
+            'hedge_recovery_threshold': config.HEDGING['hedge_recovery_threshold'],
+            'hedge_ratio': config.HEDGING['hedge_ratio'],
+            'dynamic_hedge': config.HEDGING['dynamic_hedge'],
+            'volatility_window': config.HEDGING['volatility_window'],
+            'min_hedge_threshold': config.HEDGING['min_hedge_threshold'],
+            'max_hedge_threshold': config.HEDGING['max_hedge_threshold'],
+            'drawdown_basis': config.HEDGING['drawdown_basis'],
+        }
+        
+        # Apply coin-specific overrides if available
+        if 'coin_overrides' in config.HEDGING and coin in config.HEDGING['coin_overrides']:
+            overrides = config.HEDGING['coin_overrides'][coin]
+            config_dict.update(overrides)
+            print(f"  ⚙️  {coin}: Custom hedging params - threshold={overrides.get('hedge_threshold', config_dict['hedge_threshold'])*100:.0f}%, ratio={overrides.get('hedge_ratio', config_dict['hedge_ratio'])*100:.0f}%")
+        
         args_list.append((
             coin,
             timeframes,
