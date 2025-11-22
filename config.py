@@ -20,8 +20,8 @@ MODEL_PATH = MODEL_DIR / 'enhanced_forex_pattern_model.pkl'
 # ADATFORRÁS VÁLASZTÁSA
 # ============================================================================
 
-# Válassz adatforrást: 'backtest' vagy 'websocket'
-DATA_SOURCE = os.environ.get('DATA_SOURCE', 'backtest')
+# Válassz adatforrást: 'backtest', 'backtest_hedging' vagy 'websocket'
+DATA_SOURCE = os.environ.get('DATA_SOURCE', 'backtest_hedging')
 
 # ============================================================================
 # KERESKEDÉSI PÁROK
@@ -176,6 +176,22 @@ PATTERN_FILTERS = {
     'min_probability': 0.65,   # Min 65% ML konfidencia
     'min_strength': 0.65,      # Min 65% pattern erősség
     'blacklist_patterns': []  # Kizárt patternek
+}
+
+# ============================================================================
+# HEDGING BEÁLLÍTÁSOK (backtest_hedging módhoz)
+# ============================================================================
+
+HEDGING = {
+    'enable': True,
+    'hedge_threshold': 0.15,  # 15% drawdown után aktivál hedge-et
+    'hedge_recovery_threshold': 0.05,  # 5% drawdown alatt zárja a hedge-et
+    'hedge_ratio': 0.5,  # Hedge mérete: 50% of total exposure
+    'dynamic_hedge': True,  # Dinamikus threshold volatilitás alapján
+    'volatility_window': 20,  # Volatilitás számítási ablak
+    'min_hedge_threshold': 0.10,  # Min threshold (alacsony volatilitás)
+    'max_hedge_threshold': 0.25,  # Max threshold (magas volatilitás)
+    'drawdown_basis': 'equity',  # 'capital' vagy 'equity' (unrealized PnL-lel)
 }
 
 # ============================================================================

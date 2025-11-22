@@ -230,9 +230,14 @@ def _write_per_timeframe_stats_sheet(writer, results):
             'Avg Trades per Coin': data['total_trades'] / data['coins'] if data['coins'] > 0 else 0,
         })
     
-    df_tf_stats = pd.DataFrame(tf_stats)
-    df_tf_stats = df_tf_stats.sort_values('Total Trades', ascending=False)
-    df_tf_stats.to_excel(writer, sheet_name='Per Timeframe Stats', index=False)
+    if tf_stats:
+        df_tf_stats = pd.DataFrame(tf_stats)
+        if 'Total Trades' in df_tf_stats.columns:
+            df_tf_stats = df_tf_stats.sort_values('Total Trades', ascending=False)
+        df_tf_stats.to_excel(writer, sheet_name='Per Timeframe Stats', index=False)
+    else:
+        # Empty case for hedging mode
+        pd.DataFrame({'Message': ['No timeframe stats available']}).to_excel(writer, sheet_name='Per Timeframe Stats', index=False)
     
     print("  ✓ Per Timeframe Stats sheet")
 

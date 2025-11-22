@@ -50,6 +50,42 @@ if config.DATA_SOURCE == 'backtest':
     print(f"\n✅ Backtest befejezve!")
     print(f"📄 Excel report: {excel_file}")
 
+elif config.DATA_SOURCE == 'backtest_hedging':
+    print(f"\n💰 Hedging Backtest Beállítások:")
+    print(f"   Kezdő tőke: ${config.BACKTEST_INITIAL_CAPITAL}")
+    print(f"   Adat könyvtár: {config.DATA_DIR}")
+    print(f"   Stat könyvtár: {config.STAT_DIR}")
+    print(f"   Model: {config.MODEL_PATH}")
+    print(f"\n🛡️  Hedging:")
+    print(f"   Enabled: {config.HEDGING['enable']}")
+    print(f"   Threshold: {config.HEDGING['hedge_threshold']*100}%")
+    print(f"   Dynamic: {config.HEDGING['dynamic_hedge']}")
+    
+    print("\n" + "="*80)
+    print("HEDGING BACKTEST MÓD")
+    print("="*80 + "\n")
+    
+    # Run hedging backtest
+    from backtest_hedging import run_hedging_backtest
+    
+    results = run_hedging_backtest(
+        coins=config.COINS,
+        timeframes=config.TIMEFRAMES,
+        num_workers=config.NUM_WORKERS
+    )
+    
+    # Generate Excel report
+    print("\n" + "="*80)
+    print("📊 EXCEL STATISZTIKA GENERÁLÁS")
+    print("="*80 + "\n")
+    
+    from excel_stats import generate_excel_report
+    
+    excel_file = generate_excel_report(results)
+    
+    print(f"\n✅ Hedging Backtest befejezve!")
+    print(f"📄 Excel report: {excel_file}")
+
 elif config.DATA_SOURCE == 'websocket':
     print(f"\n🌐 WebSocket Beállítások:")
     print(f"   Binance WS: {config.BINANCE_WS}")
@@ -83,5 +119,5 @@ elif config.DATA_SOURCE == 'websocket':
 
 else:
     print(f"\n❌ Ismeretlen DATA_SOURCE: {config.DATA_SOURCE}")
-    print("   Választható: 'backtest' vagy 'websocket'")
+    print("   Választható: 'backtest', 'backtest_hedging' vagy 'websocket'")
     sys.exit(1)
