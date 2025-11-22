@@ -53,49 +53,34 @@ def resample_tick_to_timeframe(df_tick, timeframe):
     return ohlcv
 
 
-def load_tick_data(coin, data_path_template):
+def load_timeframe_data(coin, timeframe, data_path_template):
     """
-    Betölt CSV tick adatokat egy coinra
+    Betölt CSV adatokat egy coinra és timeframe-re
     
     Args:
         coin: str, pl. 'BTCUSDT'
+        timeframe: str, pl. '15s', '30s', '1min'
         data_path_template: str, path sablon
         
     Returns:
         DataFrame vagy None
     """
     try:
-        # Get path
-        coin_path = Path(data_path_template.format(coin=coin))
+        # Get CSV file path
+        csv_path = Path(data_path_template.format(coin=coin, timeframe=timeframe))
         
-        if not coin_path.exists():
-            print(f"  ❌ {coin}: Nincs adat ({coin_path})")
+        if not csv_path.exists():
+            print(f"  ❌ {coin} {timeframe}: Nincs adat ({csv_path})")
             return None
         
-        # Find CSV files
-        csv_files = list(coin_path.glob('*.csv'))
+        print(f"  📥 {coin} {timeframe}: CSV betöltése...")
         
-        if not csv_files:
-            print(f"  ❌ {coin}: Nincs CSV file")
+        # Load CSV
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            print(f"    ❌ Hiba: {csv_path.name} - {e}")
             return None
-        
-        print(f"  📥 {coin}: {len(csv_files)} CSV file betöltése...")
-        
-        # Load all CSVs
-        dfs = []
-        for csv_file in csv_files:
-            try:
-                df = pd.read_csv(csv_file)
-                dfs.append(df)
-            except Exception as e:
-                print(f"    ⚠️  Hiba: {csv_file.name} - {e}")
-                continue
-        
-        if not dfs:
-            return None
-        
-        # Combine
-        df = pd.concat(dfs, ignore_index=True)
         
         # Parse time column
         time_cols = [c for c in df.columns if 'time' in c.lower() or 'date' in c.lower()]
@@ -137,12 +122,12 @@ def load_tick_data(coin, data_path_template):
         df['price'] = df['price'].astype(float)
         df['qty'] = df['qty'].astype(float)
         
-        print(f"  ✅ {coin}: {len(df):,} tick betöltve ({df.index[0]} - {df.index[-1]})")
+        print(f"  ✅ {coin} {timeframe}: {len(df):,} adatpont betöltve ({df.index[0]} - {df.index[-1]})")
         
         return df
         
     except Exception as e:
-        print(f"  ❌ {coin}: Hiba - {e}")
+        print(f"  ❌ {coin} {timeframe}: Hiba - {e}")
         traceback.print_exc()
         return None
 
@@ -161,17 +146,6 @@ def run_single_coin_backtest(args):
     
     try:
         print(f"\n[Worker {worker_id}] 🚀 {coin} backtest indítása...")
-        
-        # Load tick data
-        df_tick = load_tick_data(coin, data_path_template)
-        
-        if df_tick is None or len(df_tick) < 1000:
-            return {
-                'coin': coin,
-                'status': 'insufficient_data',
-                'total_trades': 0,
-                'return_pct': 0.0
-            }
         
         # Load ML model
         from old.forex_pattern_classifier import EnhancedForexPatternClassifier, PatternStrengthScorer
@@ -200,11 +174,18 @@ def run_single_coin_backtest(args):
         for timeframe in timeframes:
             print(f"  📊 {coin} - {timeframe} timeframe feldolgozása...")
             
+            # Load timeframe-specific data
+            df_tick = load_timeframe_data(coin, timeframe, data_path_template)
+            
+            if df_tick is None or len(df_tick) < 1000:
+                print(f"    ⚠️  Nincs elég adat")
+                continue
+            
             # Resample tick data to OHLCV
             df_ohlcv = resample_tick_to_timeframe(df_tick, timeframe)
             
             if len(df_ohlcv) < 100:
-                print(f"    ⚠️  Kevés adat ({len(df_ohlcv)} candle)")
+                print(f"    ⚠️  Kevés candle ({len(df_ohlcv)})")
                 continue
             
             print(f"    Candles: {len(df_ohlcv):,} ({df_ohlcv.index[0]} - {df_ohlcv.index[-1]})")
@@ -291,10 +272,14 @@ def run_single_coin_backtest(args):
                 
                 # Check active trades for exit
                 for trade in list(trading.active_trades):
-                    should_close, exit_price, exit_reason = trading.check_trade_exit(trade, current_candle)
+                    should_close, exit_price, exit_reason, partial_ratio = trading.check_trade_exit(trade, current_candle)
                     
                     if should_close:
-                        pnl = trading.close_trade(trade, exit_price, exit_reason, current_candle.name)
+                        pnl = trading.close_trade(trade, exit_price, exit_reason, current_candle.name, partial_ratio or 1.0)
+                
+                # Decrement cooldown counter
+                if trading.cooldown_until_candle > 0:
+                    trading.cooldown_until_candle -= 1
             
             # Store timeframe results
             timeframe_results[timeframe] = {

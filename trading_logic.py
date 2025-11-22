@@ -42,6 +42,17 @@ class TradingLogic:
         self.volatility_filter = config.VOLATILITY_FILTER
         self.pattern_filters = config.PATTERN_FILTERS
         
+        # Advanced strategies
+        self.trailing_stop = config.TRAILING_STOP
+        self.partial_tp = config.PARTIAL_TP
+        self.breakeven_stop = config.BREAKEVEN_STOP
+        self.ml_confidence_weighting = config.ML_CONFIDENCE_WEIGHTING
+        self.losing_streak_protection = config.LOSING_STREAK_PROTECTION
+        
+        # Losing streak tracking
+        self.consecutive_losses = 0
+        self.cooldown_until_candle = 0
+        
     def get_tiered_risk_percentage(self, current_capital):
         """
         Számítja a kockázatot a tőke alapján (tiered compounding)
@@ -165,6 +176,12 @@ class TradingLogic:
         """
         # Tiered risk
         current_risk_pct = self.get_tiered_risk_percentage(current_capital)
+        
+        # Losing streak protection
+        if self.losing_streak_protection['enable']:
+            if self.consecutive_losses >= self.losing_streak_protection['reduce_risk_after']:
+                risk_multiplier *= self.losing_streak_protection['risk_multiplier']
+        
         risk_amount = current_capital * current_risk_pct * risk_multiplier
         
         # LONG pozíció
@@ -209,6 +226,12 @@ class TradingLogic:
         if len(self.active_trades) >= self.config.MAX_CONCURRENT_TRADES:
             return False
         
+        # Losing streak cooldown check
+        if self.losing_streak_protection['enable']:
+            if self.consecutive_losses >= self.losing_streak_protection['stop_trading_after']:
+                if self.cooldown_until_candle > 0:
+                    return False
+        
         return True
     
     def open_trade(self, coin, pattern, entry_price, stop_loss, take_profit, 
@@ -221,6 +244,14 @@ class TradingLogic:
         """
         # CRITICAL FIX: Deduct position value from capital
         position_value = entry_price * position_size
+        
+        # ML Confidence Weighting - adjust position size
+        if self.ml_confidence_weighting['enable']:
+            for tier in self.ml_confidence_weighting['tiers']:
+                if probability >= tier['min_prob']:
+                    position_size *= tier['multiplier']
+                    position_value = entry_price * position_size
+                    break
         
         trade = {
             'coin': coin,
@@ -236,7 +267,10 @@ class TradingLogic:
             'entry_time': entry_time or datetime.now(),
             'direction': 'long',
             'status': 'open',
-            'pnl': 0.0
+            'pnl': 0.0,
+            'trailing_stop': None,  # For trailing stop
+            'partial_closed': 0.0,  # Track partial closures
+            'breakeven_activated': False,  # Track breakeven status
         }
         
         # Deduct capital used for this trade
@@ -251,64 +285,144 @@ class TradingLogic:
     
     def check_trade_exit(self, trade, current_candle):
         """
-        Ellenőrzi, hogy exit-elni kell-e a trade-et (SL vagy TP)
+        Ellenőrzi, hogy exit-elni kell-e a trade-et (SL, TP, Trailing Stop, Breakeven, Partial TP)
         
         Args:
             trade: Trade objektum
             current_candle: Aktuális candle (dict with high, low, close)
             
         Returns:
-            tuple: (should_close, exit_price, exit_reason) vagy (False, None, None)
+            tuple: (should_close, exit_price, exit_reason, partial_ratio) vagy (False, None, None, None)
         """
         if trade['status'] != 'open':
-            return False, None, None
+            return False, None, None, None
+        
+        current_price = current_candle['close']
         
         # LONG trade
         if trade['direction'] == 'long':
-            # Stop loss hit
-            if current_candle['low'] <= trade['stop_loss']:
-                return True, trade['stop_loss'], 'stop_loss'
+            # Calculate current profit %
+            profit_pct = (current_price - trade['entry_price']) / trade['entry_price']
             
-            # Take profit hit
-            elif current_candle['high'] >= trade['take_profit']:
-                return True, trade['take_profit'], 'take_profit'
+            # ========================================
+            # BREAKEVEN STOP
+            # ========================================
+            if self.breakeven_stop['enable'] and not trade['breakeven_activated']:
+                if profit_pct >= self.breakeven_stop['activation_pct']:
+                    # Move SL to breakeven + buffer
+                    trade['stop_loss'] = trade['entry_price'] * (1 + self.breakeven_stop['buffer_pct'])
+                    trade['breakeven_activated'] = True
+            
+            # ========================================
+            # TRAILING STOP
+            # ========================================
+            if self.trailing_stop['enable']:
+                if profit_pct >= self.trailing_stop['activation_pct']:
+                    # Calculate trailing stop price
+                    trail_price = current_price * (1 - self.trailing_stop['trail_pct'])
+                    
+                    # Update trailing stop if higher than current
+                    if trade['trailing_stop'] is None or trail_price > trade['trailing_stop']:
+                        trade['trailing_stop'] = trail_price
+                    
+                    # Check if trailing stop hit
+                    if current_candle['low'] <= trade['trailing_stop']:
+                        return True, trade['trailing_stop'], 'trailing_stop', 1.0
+            
+            # ========================================
+            # PARTIAL TAKE PROFIT
+            # ========================================
+            if self.partial_tp['enable']:
+                for level in self.partial_tp['levels']:
+                    if profit_pct >= level['pct']:
+                        # Check if this level already executed
+                        if trade['partial_closed'] < level['close_ratio']:
+                            close_ratio = level['close_ratio'] - trade['partial_closed']
+                            return True, current_price, f"partial_tp_{level['pct']*100:.1f}%", close_ratio
+            
+            # ========================================
+            # REGULAR STOP LOSS
+            # ========================================
+            if current_candle['low'] <= trade['stop_loss']:
+                return True, trade['stop_loss'], 'stop_loss', 1.0
+            
+            # ========================================
+            # REGULAR TAKE PROFIT
+            # ========================================
+            if current_candle['high'] >= trade['take_profit']:
+                return True, trade['take_profit'], 'take_profit', 1.0
         
-        return False, None, None
+        return False, None, None, None
     
-    def close_trade(self, trade, exit_price, exit_reason, exit_time=None):
+    def close_trade(self, trade, exit_price, exit_reason, exit_time=None, partial_ratio=1.0):
         """
-        Bezár egy trade-et és számítja a P&L-t
+        Bezár egy trade-et (teljes vagy részleges) és számítja a P&L-t
+        
+        Args:
+            partial_ratio: Milyen hányadot zárjon (1.0 = teljes, 0.5 = 50%)
         
         Returns:
             float: P&L (USDT)
         """
+        # Calculate closing quantity
+        close_size = trade['position_size'] * partial_ratio
+        
         # Calculate P&L
         if trade['direction'] == 'long':
-            pnl = (exit_price - trade['entry_price']) * trade['position_size']
+            pnl = (exit_price - trade['entry_price']) * close_size
         else:  # short (jelenleg nem használt)
-            pnl = (trade['entry_price'] - exit_price) * trade['position_size']
+            pnl = (trade['entry_price'] - exit_price) * close_size
         
-        # Update trade
-        trade['exit_price'] = exit_price
-        trade['exit_reason'] = exit_reason
-        trade['exit_time'] = exit_time or datetime.now()
-        trade['pnl'] = pnl
-        trade['status'] = 'closed'
+        # Calculate position value being closed
+        position_value_closed = trade['entry_price'] * close_size
         
-        # CRITICAL FIX: Return original position value + PnL
-        position_value = trade.get('position_value', trade['entry_price'] * trade['position_size'])
-        self.capital += position_value + pnl
+        # CRITICAL FIX: Return position value + PnL
+        self.capital += position_value_closed + pnl
         self.total_pnl += pnl
         
-        # Move to closed trades
-        self.closed_trades.append(trade)
-        if trade in self.active_trades:
-            self.active_trades.remove(trade)
+        # Update losing streak tracking
+        if self.losing_streak_protection['enable']:
+            if pnl < 0:
+                self.consecutive_losses += 1
+                if self.consecutive_losses >= self.losing_streak_protection['stop_trading_after']:
+                    self.cooldown_until_candle = self.losing_streak_protection['cooldown_candles']
+            else:
+                self.consecutive_losses = 0  # Reset on win
         
-        # Log trade close
-        self._log_trade(trade, action='CLOSE')
-        
-        return pnl
+        # Partial close or full close?
+        if partial_ratio < 1.0:
+            # Partial close - update trade
+            trade['position_size'] -= close_size
+            trade['position_value'] -= position_value_closed
+            trade['partial_closed'] += partial_ratio
+            
+            # Log partial close
+            partial_trade = trade.copy()
+            partial_trade['exit_price'] = exit_price
+            partial_trade['exit_reason'] = exit_reason
+            partial_trade['exit_time'] = exit_time or datetime.now()
+            partial_trade['pnl'] = pnl
+            partial_trade['position_size'] = close_size
+            self._log_trade(partial_trade, action='PARTIAL_CLOSE')
+            
+            return pnl
+        else:
+            # Full close
+            trade['exit_price'] = exit_price
+            trade['exit_reason'] = exit_reason
+            trade['exit_time'] = exit_time or datetime.now()
+            trade['pnl'] = pnl
+            trade['status'] = 'closed'
+            
+            # Move to closed trades
+            self.closed_trades.append(trade)
+            if trade in self.active_trades:
+                self.active_trades.remove(trade)
+            
+            # Log trade close
+            self._log_trade(trade, action='CLOSE')
+            
+            return pnl
     
     def _log_trade(self, trade, action='OPEN'):
         """
@@ -386,4 +500,5 @@ class TradingLogic:
             'return_pct': ((self.capital - self.initial_capital) / self.initial_capital) * 100,
             'avg_win': df[df['pnl'] > 0]['pnl'].mean() if winning_trades > 0 else 0,
             'avg_loss': df[df['pnl'] < 0]['pnl'].mean() if losing_trades > 0 else 0,
+            'trades': self.closed_trades  # Add trade list for pattern statistics
         }

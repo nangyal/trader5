@@ -116,19 +116,6 @@ def run_single_coin_backtest_worker(args):
     try:
         print(f"\n[Worker {worker_id}] 🛡️  {coin} HEDGING backtest indítása...")
         
-        # Load tick data
-        from backtest import load_tick_data, resample_tick_to_timeframe
-        
-        df_tick = load_tick_data(coin, data_path_template)
-        
-        if df_tick is None or len(df_tick) < 1000:
-            return {
-                'coin': coin,
-                'status': 'insufficient_data',
-                'total_trades': 0,
-                'return_pct': 0.0
-            }
-        
         # Load ML model
         from old.forex_pattern_classifier import EnhancedForexPatternClassifier
         
@@ -167,6 +154,15 @@ def run_single_coin_backtest_worker(args):
         # Process each timeframe
         for timeframe in timeframes:
             print(f"  📊 {coin} - {timeframe} (HEDGING)...")
+            
+            # Load timeframe-specific data
+            from backtest import load_timeframe_data, resample_tick_to_timeframe
+            
+            df_tick = load_timeframe_data(coin, timeframe, data_path_template)
+            
+            if df_tick is None or len(df_tick) < 1000:
+                print(f"    ⚠️  Nincs elég adat")
+                continue
             
             df_ohlcv = resample_tick_to_timeframe(df_tick, timeframe)
             
@@ -272,12 +268,15 @@ def run_single_coin_backtest_worker(args):
                 for idx in sorted(closed_hedges, reverse=True):
                     active_hedges.pop(idx)
                 
-                # Activate hedge if needed
+                # Activate hedge if needed - CSAK 5min vagy nagyobb timeframe-eken
+                # 15s, 30s, 1min timeframe-eken NEM használunk hedging-et
+                timeframe_allows_hedge = timeframe not in ['15s', '30s', '1min']
+                
                 should_hedge_now, current_drawdown = should_hedge(
                     capital, peak_capital, equity, peak_equity, config_dict, equity_curve
                 )
                 
-                if should_hedge_now:
+                if should_hedge_now and timeframe_allows_hedge:
                     if len(active_trades) > 0 and len(active_hedges) == 0:
                         hedge_trade = create_hedge_trade(
                             active_trades, current_price, i, config_dict['hedge_ratio']
@@ -355,43 +354,52 @@ def run_single_coin_backtest_worker(args):
                         'entry_time': current_candle.name if hasattr(current_candle, 'name') else i,
                         'direction': direction,
                         'status': 'open',
-                        'is_hedge': False
+                        'is_hedge': False,
+                        # Advanced strategy tracking fields
+                        'trailing_stop': None,
+                        'partial_closed': 0.0,
+                        'breakeven_activated': False
                     }
                     
                     active_trades.append(trade)
                 
-                # Check active trades for exit
+                # Check active trades for exit - ADVANCED STRATEGIES
                 closed_trades = []
                 for trade_idx, trade in enumerate(active_trades):
                     if not trade.get('is_hedge', False) and trade['status'] == 'open':
-                        # Check SL/TP
-                        if trade['direction'] == 'long':
-                            if current_candle['low'] <= trade['stop_loss']:
-                                exit_price = trade['stop_loss']
-                                exit_reason = 'stop_loss'
-                                pnl = (exit_price - trade['entry_price']) * trade['position_size']
+                        # Use advanced exit logic (trailing stop, partial TP, breakeven, etc.)
+                        should_close, exit_price, exit_reason, partial_ratio = trading.check_trade_exit(trade, current_candle)
+                        
+                        if should_close:
+                            # Calculate PnL
+                            if trade['direction'] == 'long':
+                                pnl = (exit_price - trade['entry_price']) * trade['position_size'] * partial_ratio
+                            else:  # short
+                                pnl = (trade['entry_price'] - exit_price) * trade['position_size'] * partial_ratio
+                            
+                            # Return capital
+                            capital += trade['position_value'] * partial_ratio + pnl
+                            
+                            # Partial close vagy full close
+                            if partial_ratio < 1.0:
+                                # Partial close - reduce position
+                                trade['position_size'] *= (1 - partial_ratio)
+                                trade['position_value'] *= (1 - partial_ratio)
                                 
-                                # CRITICAL FIX: Return position value + PnL
-                                capital += trade['position_value'] + pnl
-                                
+                                # Log partial close
+                                partial_trade = trade.copy()
+                                partial_trade['exit_price'] = exit_price
+                                partial_trade['exit_reason'] = exit_reason
+                                partial_trade['exit_time'] = current_candle.name if hasattr(current_candle, 'name') else i
+                                partial_trade['pnl'] = pnl
+                                partial_trade['partial_close'] = True
+                                partial_trade['partial_ratio'] = partial_ratio
+                                all_trades.append(partial_trade)
+                            else:
+                                # Full close
                                 trade['exit_price'] = exit_price
                                 trade['exit_reason'] = exit_reason
-                                trade['exit_time'] = current_candle.name
-                                trade['pnl'] = pnl
-                                trade['status'] = 'closed'
-                                
-                                all_trades.append(trade)
-                                closed_trades.append(trade_idx)
-                            elif current_candle['high'] >= trade['take_profit']:
-                                exit_price = trade['take_profit']
-                                exit_reason = 'take_profit'
-                                pnl = (exit_price - trade['entry_price']) * trade['position_size']
-                                
-                                capital += trade['position_value'] + pnl
-                                
-                                trade['exit_price'] = exit_price
-                                trade['exit_reason'] = exit_reason
-                                trade['exit_time'] = current_candle.name
+                                trade['exit_time'] = current_candle.name if hasattr(current_candle, 'name') else i
                                 trade['pnl'] = pnl
                                 trade['status'] = 'closed'
                                 

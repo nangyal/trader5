@@ -45,6 +45,12 @@ def generate_excel_report(backtest_results):
         
         # Sheet 5: Top Performers
         _write_top_performers_sheet(writer, backtest_results)
+        
+        # Sheet 6: Pattern Statistics
+        _write_pattern_stats_sheet(writer, backtest_results)
+        
+        # Sheet 7: Hedging Statistics (if available)
+        _write_hedging_stats_sheet(writer, backtest_results)
     
     print(f"✅ Excel riport mentve: {excel_path}")
     
@@ -299,6 +305,298 @@ def _write_top_performers_sheet(writer, results):
     df_top.to_excel(writer, sheet_name='Top Performers', index=False)
     
     print("  ✓ Top Performers sheet")
+
+
+def _write_pattern_stats_sheet(writer, results):
+    """
+    Pattern Statistics - pattern-enkénti teljesítmény statisztikák
+    """
+    successful = [r for r in results if r.get('status') == 'completed']
+    
+    if not successful:
+        df_empty = pd.DataFrame({'Message': ['No data available']})
+        df_empty.to_excel(writer, sheet_name='Pattern Stats', index=False)
+        print("  ✓ Pattern Stats sheet (empty)")
+        return
+    
+    # Collect all trades from all results
+    all_trades = []
+    for result in successful:
+        trades = result.get('trades', [])
+        if trades:
+            all_trades.extend(trades)
+        
+        # Hedging backtest esetén a hedge trade-eket kihagyjuk
+        hedges = result.get('hedges', [])
+        # Hedge-eket nem számoljuk a pattern statisztikába
+    
+    if not all_trades:
+        df_empty = pd.DataFrame({'Message': ['No trade data available']})
+        df_empty.to_excel(writer, sheet_name='Pattern Stats', index=False)
+        print("  ✓ Pattern Stats sheet (empty)")
+        return
+    
+    # Group by pattern
+    trades_df = pd.DataFrame(all_trades)
+    
+    # Filter out hedge trades
+    if 'is_hedge' in trades_df.columns:
+        trades_df = trades_df[trades_df['is_hedge'] != True]
+    
+    if 'pattern' not in trades_df.columns or len(trades_df) == 0:
+        df_empty = pd.DataFrame({'Message': ['No pattern data available']})
+        df_empty.to_excel(writer, sheet_name='Pattern Stats', index=False)
+        print("  ✓ Pattern Stats sheet (empty)")
+        return
+    
+    pattern_stats = []
+    
+    for pattern in trades_df['pattern'].unique():
+        pattern_trades = trades_df[trades_df['pattern'] == pattern]
+        
+        total = len(pattern_trades)
+        winning = len(pattern_trades[pattern_trades['pnl'] > 0])
+        losing = len(pattern_trades[pattern_trades['pnl'] < 0])
+        win_rate = winning / total if total > 0 else 0
+        
+        total_pnl = pattern_trades['pnl'].sum()
+        avg_pnl = pattern_trades['pnl'].mean()
+        
+        avg_win = pattern_trades[pattern_trades['pnl'] > 0]['pnl'].mean() if winning > 0 else 0
+        avg_loss = pattern_trades[pattern_trades['pnl'] < 0]['pnl'].mean() if losing > 0 else 0
+        
+        # Win/Loss ratio
+        win_loss_ratio = abs(avg_win / avg_loss) if avg_loss != 0 else 0
+        
+        # Profit factor
+        gross_profit = pattern_trades[pattern_trades['pnl'] > 0]['pnl'].sum()
+        gross_loss = abs(pattern_trades[pattern_trades['pnl'] < 0]['pnl'].sum())
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
+        
+        # Average probability and strength
+        avg_probability = pattern_trades['probability'].mean() if 'probability' in pattern_trades.columns else 0
+        avg_strength = pattern_trades['strength'].mean() if 'strength' in pattern_trades.columns else 0
+        
+        pattern_stats.append({
+            'Pattern': pattern,
+            'Total Trades': total,
+            'Winning': winning,
+            'Losing': losing,
+            'Win Rate (%)': win_rate * 100,
+            'Total P&L': total_pnl,
+            'Avg P&L': avg_pnl,
+            'Avg Win': avg_win,
+            'Avg Loss': avg_loss,
+            'Win/Loss Ratio': win_loss_ratio,
+            'Profit Factor': profit_factor,
+            'Avg Probability (%)': avg_probability * 100,
+            'Avg Strength (%)': avg_strength * 100,
+        })
+    
+    df_pattern_stats = pd.DataFrame(pattern_stats)
+    
+    # Sort by Total P&L
+    df_pattern_stats = df_pattern_stats.sort_values('Total P&L', ascending=False)
+    
+    df_pattern_stats.to_excel(writer, sheet_name='Pattern Stats', index=False)
+    
+    print("  ✓ Pattern Stats sheet")
+
+
+def _write_hedging_stats_sheet(writer, results):
+    """
+    Hedging Statistics - hedging teljesítmény timeframe-enkéntés coin-onként
+    """
+    # Check if any result has hedging data
+    has_hedging = any(
+        r.get('hedges') or r.get('hedge_activations', 0) > 0 
+        for r in results 
+        if r.get('status') == 'completed'
+    )
+    
+    if not has_hedging:
+        df_empty = pd.DataFrame({'Message': ['No hedging data available - run backtest_hedging mode']})
+        df_empty.to_excel(writer, sheet_name='Hedging Stats', index=False)
+        print("  ✓ Hedging Stats sheet (no data)")
+        return
+    
+    successful = [r for r in results if r.get('status') == 'completed']
+    
+    # ===================================
+    # Overall Hedging Summary
+    # ===================================
+    total_hedge_activations = sum(r.get('hedge_activations', 0) for r in successful)
+    total_hedges = sum(len(r.get('hedges', [])) for r in successful)
+    
+    all_hedges = []
+    for result in successful:
+        hedges = result.get('hedges', [])
+        all_hedges.extend(hedges)
+    
+    if all_hedges:
+        hedges_df = pd.DataFrame(all_hedges)
+        winning_hedges = len(hedges_df[hedges_df['pnl'] > 0])
+        losing_hedges = len(hedges_df[hedges_df['pnl'] < 0])
+        total_hedge_pnl = hedges_df['pnl'].sum()
+        avg_hedge_pnl = hedges_df['pnl'].mean()
+        hedge_win_rate = winning_hedges / total_hedges if total_hedges > 0 else 0
+    else:
+        winning_hedges = losing_hedges = 0
+        total_hedge_pnl = avg_hedge_pnl = hedge_win_rate = 0
+    
+    # ===================================
+    # Per Coin Hedging Stats
+    # ===================================
+    coin_hedge_stats = []
+    
+    for result in successful:
+        coin = result['coin']
+        hedges = result.get('hedges', [])
+        activations = result.get('hedge_activations', 0)
+        
+        if not hedges and activations == 0:
+            continue
+        
+        hedge_count = len(hedges)
+        
+        if hedges:
+            hedges_df = pd.DataFrame(hedges)
+            winning = len(hedges_df[hedges_df['pnl'] > 0])
+            losing = len(hedges_df[hedges_df['pnl'] < 0])
+            total_pnl = hedges_df['pnl'].sum()
+            avg_pnl = hedges_df['pnl'].mean()
+            win_rate = winning / hedge_count if hedge_count > 0 else 0
+            
+            # Group by timeframe if available
+            timeframe_breakdown = {}
+            if 'timeframe' in hedges_df.columns:
+                for tf in hedges_df['timeframe'].unique():
+                    tf_hedges = hedges_df[hedges_df['timeframe'] == tf]
+                    timeframe_breakdown[tf] = {
+                        'count': len(tf_hedges),
+                        'pnl': tf_hedges['pnl'].sum()
+                    }
+        else:
+            winning = losing = hedge_count = 0
+            total_pnl = avg_pnl = win_rate = 0
+            timeframe_breakdown = {}
+        
+        coin_hedge_stats.append({
+            'Coin': coin,
+            'Activations': activations,
+            'Total Hedges': hedge_count,
+            'Winning Hedges': winning,
+            'Losing Hedges': losing,
+            'Win Rate (%)': win_rate * 100,
+            'Total P&L': total_pnl,
+            'Avg P&L': avg_pnl,
+            'Timeframe Breakdown': str(timeframe_breakdown) if timeframe_breakdown else 'N/A'
+        })
+    
+    # ===================================
+    # Per Timeframe Hedging Stats
+    # ===================================
+    timeframe_hedge_stats = {}
+    
+    for result in successful:
+        hedges = result.get('hedges', [])
+        if not hedges:
+            continue
+        
+        hedges_df = pd.DataFrame(hedges)
+        if 'timeframe' not in hedges_df.columns:
+            continue
+        
+        for tf in hedges_df['timeframe'].unique():
+            if tf not in timeframe_hedge_stats:
+                timeframe_hedge_stats[tf] = {
+                    'hedges': [],
+                    'coins': set()
+                }
+            
+            tf_hedges = hedges_df[hedges_df['timeframe'] == tf]
+            timeframe_hedge_stats[tf]['hedges'].extend(tf_hedges.to_dict('records'))
+            timeframe_hedge_stats[tf]['coins'].add(result['coin'])
+    
+    tf_stats = []
+    for tf, data in timeframe_hedge_stats.items():
+        hedges = data['hedges']
+        hedge_count = len(hedges)
+        
+        if hedges:
+            hedges_df = pd.DataFrame(hedges)
+            winning = len(hedges_df[hedges_df['pnl'] > 0])
+            losing = len(hedges_df[hedges_df['pnl'] < 0])
+            total_pnl = hedges_df['pnl'].sum()
+            avg_pnl = hedges_df['pnl'].mean()
+            win_rate = winning / hedge_count if hedge_count > 0 else 0
+        else:
+            winning = losing = 0
+            total_pnl = avg_pnl = win_rate = 0
+        
+        tf_stats.append({
+            'Timeframe': tf,
+            'Coins': len(data['coins']),
+            'Total Hedges': hedge_count,
+            'Winning': winning,
+            'Losing': losing,
+            'Win Rate (%)': win_rate * 100,
+            'Total P&L': total_pnl,
+            'Avg P&L': avg_pnl
+        })
+    
+    # ===================================
+    # Write to Excel with multiple sections
+    # ===================================
+    
+    # Summary section
+    summary_data = {
+        'Metric': [
+            'Total Hedge Activations',
+            'Total Hedge Trades',
+            'Winning Hedges',
+            'Losing Hedges',
+            'Overall Win Rate (%)',
+            'Total Hedge P&L',
+            'Avg Hedge P&L',
+            '',
+            'Note: Hedges are SHORT positions that protect LONG trades during drawdowns'
+        ],
+        'Value': [
+            total_hedge_activations,
+            total_hedges,
+            winning_hedges,
+            losing_hedges,
+            f"{hedge_win_rate*100:.2f}",
+            f"{total_hedge_pnl:.4f}",
+            f"{avg_hedge_pnl:.4f}",
+            '',
+            ''
+        ]
+    }
+    
+    df_summary = pd.DataFrame(summary_data)
+    
+    # Write summary
+    df_summary.to_excel(writer, sheet_name='Hedging Stats', index=False, startrow=0)
+    
+    # Write per-coin stats
+    if coin_hedge_stats:
+        df_coin_hedges = pd.DataFrame(coin_hedge_stats)
+        df_coin_hedges.to_excel(writer, sheet_name='Hedging Stats', index=False, startrow=len(df_summary) + 3)
+    
+    # Write per-timeframe stats
+    if tf_stats:
+        df_tf_hedges = pd.DataFrame(tf_stats)
+        df_tf_hedges = df_tf_hedges.sort_values('Total P&L', ascending=False)
+        
+        start_row = len(df_summary) + 3
+        if coin_hedge_stats:
+            start_row += len(coin_hedge_stats) + 3
+        
+        df_tf_hedges.to_excel(writer, sheet_name='Hedging Stats', index=False, startrow=start_row)
+    
+    print("  ✓ Hedging Stats sheet")
 
 
 if __name__ == '__main__':

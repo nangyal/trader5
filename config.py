@@ -21,7 +21,7 @@ MODEL_PATH = MODEL_DIR / 'enhanced_forex_pattern_model.pkl'
 # ============================================================================
 
 # Válassz adatforrást: 'backtest', 'backtest_hedging' vagy 'websocket'
-DATA_SOURCE = os.environ.get('DATA_SOURCE', 'backtest_hedging')
+DATA_SOURCE = os.environ.get('DATA_SOURCE', 'backtest')
 
 # ============================================================================
 # KERESKEDÉSI PÁROK
@@ -38,13 +38,13 @@ COINS = [
 # ============================================================================
 
 # Backtest és WebSocket esetén is ezeket az időkereteket használja
-TIMEFRAMES = ['15s', '30s', '1min']
+TIMEFRAMES = ['15s', '30s', '1min', '5min',  '15min',  '30min']
 
 # ============================================================================
 # MULTIPROCESSING BEÁLLÍTÁSOK
 # ============================================================================
 
-NUM_WORKERS = int(os.environ.get('NUM_WORKERS', 1))  # Single worker debug
+NUM_WORKERS = int(os.environ.get('NUM_WORKERS', 28))  # Single worker debug
 
 # ============================================================================
 # BACKTEST SPECIFIKUS BEÁLLÍTÁSOK
@@ -54,8 +54,8 @@ NUM_WORKERS = int(os.environ.get('NUM_WORKERS', 1))  # Single worker debug
 BACKTEST_INITIAL_CAPITAL = float(os.environ.get('BACKTEST_INITIAL_CAPITAL', 200.0))
 
 # CSV file elérési út sablon
-# Példa: data/BTCUSDT/1min/monthly/BTCUSDT-2025-01.csv
-BACKTEST_DATA_PATH_TEMPLATE = str(DATA_DIR / '{coin}' / '1min' / 'monthly')
+# Példa: /home/nangyal/Desktop/v4/data/BTCUSDT/15s/monthly/BTCUSDT-trades-2025-10_15s.csv
+BACKTEST_DATA_PATH_TEMPLATE = '/home/nangyal/Desktop/v4/data/{coin}/{timeframe}/monthly/{coin}-trades-2025-10_{timeframe}.csv'
 
 # ============================================================================
 # WEBSOCKET BEÁLLÍTÁSOK (Binance)
@@ -192,6 +192,62 @@ HEDGING = {
     'min_hedge_threshold': 0.10,  # Min threshold (alacsony volatilitás)
     'max_hedge_threshold': 0.25,  # Max threshold (magas volatilitás)
     'drawdown_basis': 'equity',  # 'capital' vagy 'equity' (unrealized PnL-lel)
+}
+
+# ============================================================================
+# ADVANCED PROFIT/LOSS STRATEGIES
+# ============================================================================
+
+# Trailing Stop Loss - profitot követő stop loss
+TRAILING_STOP = {
+    'enable': True,
+    'activation_pct': 0.010,  # +1.0% profit után aktiválódik
+    'trail_pct': 0.005,  # 0.5% trailing distance
+}
+
+# Partial Take Profit - részleges profitzárás
+PARTIAL_TP = {
+    'enable': True,
+    'levels': [
+        {'pct': 0.015, 'close_ratio': 0.50},  # +1.5% → close 50%
+        {'pct': 0.025, 'close_ratio': 0.30},  # +2.5% → close 30%
+        {'pct': 0.040, 'close_ratio': 0.20},  # +4.0% → close 20%
+    ]
+}
+
+# Breakeven Stop - profit esetén SL → entry price
+BREAKEVEN_STOP = {
+    'enable': True,
+    'activation_pct': 0.008,  # +0.8% profit után SL → breakeven
+    'buffer_pct': 0.001,  # +0.1% buffer (entry + buffer)
+}
+
+# ML Confidence Based Position Sizing
+ML_CONFIDENCE_WEIGHTING = {
+    'enable': True,
+    'tiers': [
+        {'min_prob': 0.80, 'multiplier': 1.5},  # 80%+ → 1.5x position
+        {'min_prob': 0.70, 'multiplier': 1.2},  # 70-80% → 1.2x position
+        {'min_prob': 0.65, 'multiplier': 1.0},  # 65-70% → 1.0x position
+    ]
+}
+
+# Losing Streak Protection
+LOSING_STREAK_PROTECTION = {
+    'enable': True,
+    'reduce_risk_after': 3,  # 3 vesztő trade után risk csökkentés
+    'risk_multiplier': 0.5,  # Risk → 50%
+    'stop_trading_after': 5,  # 5 vesztő trade után STOP
+    'cooldown_candles': 60,  # 60 candle pause (1 óra @ 1min)
+}
+
+# Pattern Performance Filter - rossz pattern-ek kiszűrése
+PATTERN_PERFORMANCE_FILTER = {
+    'enable': True,
+    'min_trades': 10,  # Min trade szám aPattern Stats alapján
+    'min_win_rate': 0.40,  # Min 40% win rate
+    'min_profit_factor': 1.0,  # Min 1.0 profit factor
+    'auto_blacklist': True,  # Automatikus blacklist rossz pattern-eknek
 }
 
 # ============================================================================
