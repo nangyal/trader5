@@ -81,16 +81,16 @@ RISK_PER_TRADE = 0.02  # 2%
 # Használj tiered risk management-et?
 USE_TIERED_RISK = True
 
-# Tiered risk szintek - ULTRA MEGA AGGRESSIVE (200%+ target!)
+# Tiered risk szintek - REALISTIC SETTINGS
 RISK_TIERS = [
-    {'max_capital_ratio': 2.0, 'risk': 0.15},      # <2x: 15% (EXTREME!)
-    {'max_capital_ratio': 3.0, 'risk': 0.12},      # 2-3x: 12%
-    {'max_capital_ratio': 5.0, 'risk': 0.10},      # 3-5x: 10%
-    {'max_capital_ratio': float('inf'), 'risk': 0.08}  # >5x: 8%
+    {'max_capital_ratio': 2.0, 'risk': 0.05},      # <2x: 5%
+    {'max_capital_ratio': 3.0, 'risk': 0.04},      # 2-3x: 4%
+    {'max_capital_ratio': 5.0, 'risk': 0.03},      # 3-5x: 3%
+    {'max_capital_ratio': float('inf'), 'risk': 0.02}  # >5x: 2%
 ]
 
-# Maximum egyidejű tradeek - ULTRA AGGRESSIVE!
-MAX_CONCURRENT_TRADES = 100  # 100 parallel trade!
+# Maximum egyidejű tradeek - REALISTIC
+MAX_CONCURRENT_TRADES = 5  # 5 parallel trades max
 
 # ============================================================================
 # PATTERN TARGETS (STOP LOSS & TAKE PROFIT)
@@ -149,9 +149,9 @@ PATTERN_TARGETS = {
 # ============================================================================
 
 TREND_ALIGNMENT = {
-    'enable': False,  # Kikapcsolva több trade-hez!
+    'enable': True,  # Re-enable for better win rate
     'lookback_period': 20,
-    'use_ema_filter': False,  # EMA filter kikapcsolva
+    'use_ema_filter': True,  # Re-enable EMA filter
     'ema_period': 50,
     # OPTIMIZED: Több pattern = több trade opportunity
     'bullish_patterns': ['ascending_triangle', 'symmetrical_triangle', 'cup_and_handle', 'flag_bullish', 'double_bottom'],
@@ -163,9 +163,9 @@ TREND_ALIGNMENT = {
 # ============================================================================
 
 VOLATILITY_FILTER = {
-    'enable': False,  # KIKAPCSOLVA - még több trade!
+    'enable': True,  # Re-enable
     'atr_period': 14,
-    'min_atr_pct': 0.1,  # 0.1% (ultra low)
+    'min_atr_pct': 0.3,  # 0.3% reasonable threshold
 }
 
 # ============================================================================
@@ -173,8 +173,8 @@ VOLATILITY_FILTER = {
 # ============================================================================
 
 PATTERN_FILTERS = {
-    'min_probability': 0.5,   # Min 50% ML konfidencia (csökkentve 0.7-ről)
-    'min_strength': 0.5,      # Min 50% pattern erősség (csökkentve 0.7-ről)
+    'min_probability': 0.65,   # Min 65% ML konfidencia
+    'min_strength': 0.65,      # Min 65% pattern erősség
     'blacklist_patterns': []  # Kizárt patternek
 }
 

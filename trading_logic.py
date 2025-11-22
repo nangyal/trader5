@@ -219,6 +219,9 @@ class TradingLogic:
         Returns:
             dict: Trade objektum
         """
+        # CRITICAL FIX: Deduct position value from capital
+        position_value = entry_price * position_size
+        
         trade = {
             'coin': coin,
             'pattern': pattern,
@@ -226,6 +229,7 @@ class TradingLogic:
             'stop_loss': stop_loss,
             'take_profit': take_profit,
             'position_size': position_size,
+            'position_value': position_value,  # Track position value
             'probability': probability,
             'strength': strength,
             'timeframe': timeframe,
@@ -234,6 +238,9 @@ class TradingLogic:
             'status': 'open',
             'pnl': 0.0
         }
+        
+        # Deduct capital used for this trade
+        self.capital -= position_value
         
         self.active_trades.append(trade)
         
@@ -288,8 +295,9 @@ class TradingLogic:
         trade['pnl'] = pnl
         trade['status'] = 'closed'
         
-        # Update capital & PnL
-        self.capital += pnl
+        # CRITICAL FIX: Return original position value + PnL
+        position_value = trade.get('position_value', trade['entry_price'] * trade['position_size'])
+        self.capital += position_value + pnl
         self.total_pnl += pnl
         
         # Move to closed trades
