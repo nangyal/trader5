@@ -89,8 +89,8 @@ RISK_TIERS = [
     {'max_capital_ratio': float('inf'), 'risk': 0.02}  # >5x: 2%
 ]
 
-# Maximum egyidejű tradeek - REALISTIC
-MAX_CONCURRENT_TRADES = 5  # 5 parallel trades max
+# Maximum egyidejű tradeek - REALISTIC (adjusted to capital limits)
+MAX_CONCURRENT_TRADES = 3  # 3 parallel trades max (3 × 33% = ~100% capital usage)
 
 # ============================================================================
 # PATTERN TARGETS (STOP LOSS & TAKE PROFIT)

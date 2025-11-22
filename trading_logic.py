@@ -192,8 +192,9 @@ class TradingLogic:
         
         position_size = risk_amount / risk_per_unit
         
-        # Cap position size (AGGRESSIVE: 50% of capital instead of 20%)
-        max_position_value = current_capital * 0.50
+        # Cap position size to prevent over-leveraging
+        # With MAX_CONCURRENT_TRADES=3, max 33% per trade ensures 100% total usage
+        max_position_value = current_capital * 0.33
         position_value = position_size * entry_price
         
         if position_value > max_position_value:
