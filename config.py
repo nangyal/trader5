@@ -20,7 +20,7 @@ MODEL_PATH = MODEL_DIR / 'enhanced_forex_pattern_model.pkl'
 # ADATFORRÁS VÁLASZTÁSA
 # ============================================================================
 
-# Válassz adatforrást: 'backtest', 'backtest_hedging' vagy 'websocket'
+# Válassz adatforrást: 'backtest', 'backtest_hedging', 'websocket' vagy 'websocket_hedging'
 DATA_SOURCE = os.environ.get('DATA_SOURCE', 'backtest')
 
 # ============================================================================
@@ -99,10 +99,10 @@ RISK_TIERS = [
 ]
 
 # Maximum egyidejű tradeek - REALISTIC (adjusted to capital limits)
-MAX_CONCURRENT_TRADES = 3  # 3 parallel trades max (3 × 33% = ~100% capital usage)
+MAX_CONCURRENT_TRADES = 3  # 3 parallel trades max (3 × 30% = 90% max capital usage)
 
 # Maximum position size per trade (% of current capital)
-MAX_POSITION_SIZE_PCT = 0.33  # 33% - ensures full capital usage with MAX_CONCURRENT_TRADES
+MAX_POSITION_SIZE_PCT = 0.30  # 30% - allows 90% total usage, 10% buffer for safety
 
 # ============================================================================
 # PATTERN TARGETS (STOP LOSS & TAKE PROFIT)

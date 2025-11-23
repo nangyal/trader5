@@ -121,9 +121,45 @@ def main():
             demo_mode=config.BINANCE_DEMO_MODE
         ))
 
+    elif config.DATA_SOURCE == 'websocket_hedging':
+        print(f"\n🌐 WebSocket Hedging Beállítások:")
+        print(f"   Binance WS: {config.BINANCE_WS}")
+        print(f"   Demo Mode: {config.BINANCE_DEMO_MODE}")
+        print(f"   Model: {config.MODEL_PATH}")
+        print(f"\n🛡️  Hedging:")
+        print(f"   Enabled: {config.HEDGING['enable']}")
+        print(f"   Threshold: {config.HEDGING['hedge_threshold']*100}%")
+        print(f"   Dynamic: {config.HEDGING['dynamic_hedge']}")
+        
+        print("\n" + "="*80)
+        print("WEBSOCKET LIVE TRADING + HEDGING MÓD")
+        print("="*80 + "\n")
+        
+        print("⚠️  FIGYELEM: Live trading mód HEDGING-gel!")
+        if config.BINANCE_DEMO_MODE:
+            print("✅ DEMO/TESTNET mód - biztonságos tesztelés")
+        else:
+            print("⚠️⚠️⚠️  LIVE/MAINNET mód - valódi kereskedés HEDGING-gel!")
+            response = input("\nBiztosan folytatod? (yes/no): ")
+            if response.lower() != 'yes':
+                print("Leállítva.")
+                sys.exit(0)
+        
+        # Run WebSocket hedging trading
+        import asyncio
+        from websocket_live_hedging import run_live_websocket_hedging_trading
+        
+        asyncio.run(run_live_websocket_hedging_trading(
+            coins=config.COINS,
+            timeframes=config.TIMEFRAMES,
+            api_key=config.BINANCE_API_KEY,
+            api_secret=config.BINANCE_API_SECRET,
+            demo_mode=config.BINANCE_DEMO_MODE
+        ))
+
     else:
         print(f"\n❌ Ismeretlen DATA_SOURCE: {config.DATA_SOURCE}")
-        print("   Választható: 'backtest', 'backtest_hedging' vagy 'websocket'")
+        print("   Választható: 'backtest', 'backtest_hedging', 'websocket' vagy 'websocket_hedging'")
         sys.exit(1)
 
 

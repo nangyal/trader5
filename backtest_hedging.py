@@ -1,6 +1,7 @@
 """
 Hedging Backtest modul - Dinamikus hedging-gel kiegészített backtest
 JAVÍTOTT capital management-tel (position value tracking)
+REFACTORED: Uses HedgeManager class for consistency with websocket
 """
 import os
 os.environ['XGBOOST_VERBOSITY'] = '0'
@@ -16,97 +17,7 @@ warnings.filterwarnings('ignore')
 
 import config
 from trading_logic import TradingLogic
-
-
-def compute_dynamic_threshold(equity_curve, volatility_window, min_thresh, max_thresh):
-    """Dinamikus hedge threshold volatilitás alapján"""
-    if len(equity_curve) < volatility_window + 2:
-        return (min_thresh + max_thresh) / 2
-        
-    equity = np.array(equity_curve[-(volatility_window+1):])
-    returns = np.diff(equity) / equity[:-1]
-    vol = np.std(returns)
-    
-    # Normalize volatility
-    norm_vol = min(1.0, max(0.0, vol / 0.03))
-    
-    # Higher vol → lower threshold
-    dynamic_threshold = max_thresh - norm_vol * (max_thresh - min_thresh)
-    
-    return dynamic_threshold
-
-
-def should_hedge(capital, peak_capital, equity, peak_equity, config_dict, equity_curve):
-    """Eldönti, hogy aktiválni kell-e hedge-et"""
-    if not config_dict['enable_hedging'] or peak_capital <= 0:
-        return False, 0
-        
-    if config_dict['dynamic_hedge']:
-        threshold = compute_dynamic_threshold(
-            equity_curve,
-            config_dict['volatility_window'],
-            config_dict['min_hedge_threshold'],
-            config_dict['max_hedge_threshold']
-        )
-    else:
-        threshold = config_dict['hedge_threshold']
-    
-    if config_dict['drawdown_basis'] == 'equity' and equity is not None and peak_equity:
-        drawdown = (peak_equity - equity) / peak_equity if peak_equity > 0 else 0
-    else:
-        drawdown = (peak_capital - capital) / peak_capital
-        
-    return drawdown > threshold, drawdown
-
-
-def should_close_hedge(capital, peak_capital, equity, peak_equity, config_dict):
-    """Eldönti, hogy zárni kell-e a hedge-et"""
-    if peak_capital <= 0:
-        return False
-        
-    if config_dict['drawdown_basis'] == 'equity' and equity is not None and peak_equity:
-        drawdown = (peak_equity - equity) / peak_equity if peak_equity > 0 else 0
-    else:
-        drawdown = (peak_capital - capital) / peak_capital
-        
-    return drawdown < config_dict['hedge_recovery_threshold']
-
-
-def create_hedge_trade(active_trades, current_price, index, hedge_ratio):
-    """Hedge trade létrehozása"""
-    if not active_trades:
-        return None
-        
-    # Total LONG exposure
-    total_long_exposure = sum(
-        t.get('position_value', t['position_size'] * current_price) 
-        for t in active_trades 
-        if t['direction'] == 'long' and not t.get('is_hedge', False)
-    )
-    
-    hedge_size = total_long_exposure * hedge_ratio
-    
-    if current_price <= 0:
-        return None
-        
-    hedge_position_size = hedge_size / current_price
-    
-    # Hedge trade (SHORT)
-    hedge_trade = {
-        'entry_price': current_price,
-        'position_size': hedge_position_size,
-        'position_value': hedge_size,
-        'stop_loss': current_price * 1.03,  # 3% SL
-        'take_profit': current_price * 0.97,  # 3% TP
-        'direction': 'short',
-        'pattern': 'hedge',
-        'is_hedge': True,
-        'status': 'open',
-        'entry_index': index,
-        'hedge_size': hedge_size
-    }
-    
-    return hedge_trade
+from hedge_manager import HedgeManager
 
 
 def run_single_coin_backtest_worker(args):
@@ -135,6 +46,21 @@ def run_single_coin_backtest_worker(args):
         # Initialize trading logic
         import config as config_module
         trading = TradingLogic(config_module)
+        
+        # Initialize HedgeManager with backtest config
+        # Convert config_dict to HedgeManager format
+        hedge_config = {
+            'enable': config_dict['enable_hedging'],
+            'hedge_threshold': config_dict['hedge_threshold'],
+            'hedge_recovery_threshold': config_dict['hedge_recovery_threshold'],
+            'hedge_ratio': config_dict['hedge_ratio'],
+            'dynamic_hedge': config_dict['dynamic_hedge'],
+            'volatility_window': config_dict['volatility_window'],
+            'min_hedge_threshold': config_dict['min_hedge_threshold'],
+            'max_hedge_threshold': config_dict['max_hedge_threshold'],
+            'drawdown_basis': config_dict['drawdown_basis'],
+        }
+        hedge_manager = HedgeManager(hedge_config)
         
         # Initialize hedging tracking
         initial_capital = config_dict['initial_capital']
@@ -190,39 +116,17 @@ def run_single_coin_backtest_worker(args):
                 pattern_prob = np.max(probabilities[i])
                 pattern_strength = pattern_strengths[i]
                 
-                # Update peaks
-                if capital > peak_capital:
-                    peak_capital = capital
-                
-                # Calculate unrealized PnL
-                unrealized_main = sum(
-                    t['position_size'] * (current_price - t['entry_price'])
-                    for t in active_trades
-                    if not t.get('is_hedge', False)
-                )
-                
-                unrealized_hedge = sum(
-                    h['position_size'] * (h['entry_price'] - current_price)
-                    for h in active_hedges
-                    if h['status'] == 'open'
-                )
-                
-                equity = capital + unrealized_main + unrealized_hedge
-                
-                if equity > peak_equity:
-                    peak_equity = equity
-                
                 # ========================================
-                # HEDGE MANAGEMENT
+                # HEDGE MANAGEMENT - CLOSE HEDGES FIRST
                 # ========================================
                 
                 # Close hedges if drawdown recovered
                 closed_hedges = []
                 for hedge_idx, hedge in enumerate(active_hedges):
                     if hedge['status'] == 'open':
-                        # Check recovery
-                        if should_close_hedge(capital, peak_capital, equity, peak_equity, config_dict):
-                            pnl = hedge['position_size'] * (hedge['entry_price'] - current_price)
+                        # Check recovery using HedgeManager
+                        if hedge_manager.should_close_hedge(capital, peak_capital, equity, peak_equity):
+                            pnl = hedge_manager.calculate_hedge_pnl(hedge, current_price)
                             
                             # CRITICAL FIX: Return position value + PnL
                             capital += hedge['position_value'] + pnl
@@ -239,31 +143,22 @@ def run_single_coin_backtest_worker(args):
                             closed_hedges.append(hedge_idx)
                             continue
                         
-                        # Check SL/TP
-                        if current_candle['high'] >= hedge['stop_loss']:
-                            pnl = hedge['position_size'] * (hedge['entry_price'] - hedge['stop_loss'])
-                            capital += hedge['position_value'] + pnl
-                            
-                            hedge['exit_price'] = hedge['stop_loss']
-                            hedge['exit_reason'] = 'stop_loss'
-                            hedge['status'] = 'closed'
-                            closed_hedges.append(hedge_idx)
-                        elif current_candle['low'] <= hedge['take_profit']:
-                            pnl = hedge['position_size'] * (hedge['entry_price'] - hedge['take_profit'])
-                            capital += hedge['position_value'] + pnl
-                            
-                            hedge['exit_price'] = hedge['take_profit']
-                            hedge['exit_reason'] = 'take_profit'
-                            hedge['status'] = 'closed'
-                            closed_hedges.append(hedge_idx)
-                        else:
-                            continue
+                        # Check SL/TP using HedgeManager
+                        should_close, exit_price, exit_reason = hedge_manager.check_hedge_exit(hedge, current_candle)
                         
-                        hedge['exit_time'] = current_candle.name if hasattr(current_candle, 'name') else i
-                        hedge['pnl'] = pnl
-                        hedge['coin'] = coin
-                        hedge['timeframe'] = timeframe
-                        all_hedges.append(hedge)
+                        if should_close:
+                            pnl = hedge_manager.calculate_hedge_pnl(hedge, exit_price)
+                            capital += hedge['position_value'] + pnl
+                            
+                            hedge['exit_price'] = exit_price
+                            hedge['exit_reason'] = exit_reason
+                            hedge['status'] = 'closed'
+                            hedge['exit_time'] = current_candle.name if hasattr(current_candle, 'name') else i
+                            hedge['pnl'] = pnl
+                            hedge['coin'] = coin
+                            hedge['timeframe'] = timeframe
+                            all_hedges.append(hedge)
+                            closed_hedges.append(hedge_idx)
                 
                 for idx in sorted(closed_hedges, reverse=True):
                     active_hedges.pop(idx)
@@ -272,26 +167,35 @@ def run_single_coin_backtest_worker(args):
                 # 15s, 30s, 1min timeframe-eken NEM használunk hedging-et
                 timeframe_allows_hedge = timeframe not in ['15s', '30s', '1min']
                 
-                should_hedge_now, current_drawdown = should_hedge(
-                    capital, peak_capital, equity, peak_equity, config_dict, equity_curve
+                # Update HedgeManager equity curve for dynamic threshold
+                hedge_manager.update_equity_curve(equity)
+                
+                # Check if should activate hedge using HedgeManager
+                should_hedge_now, current_drawdown = hedge_manager.should_hedge(
+                    capital, peak_capital, equity, peak_equity
                 )
                 
                 if should_hedge_now and timeframe_allows_hedge:
                     if len(active_trades) > 0 and len(active_hedges) == 0:
-                        hedge_trade = create_hedge_trade(
-                            active_trades, current_price, i, config_dict['hedge_ratio']
+                        # Create hedge using HedgeManager
+                        hedge_trade = hedge_manager.create_hedge_trade(
+                            active_trades, current_price, coin, 
+                            entry_time=current_candle.name if hasattr(current_candle, 'name') else i
                         )
                         if hedge_trade:
                             # CRITICAL FIX: Deduct hedge position value
                             capital -= hedge_trade['position_value']
+                            # Add backtest-specific fields
+                            hedge_trade['entry_index'] = i
                             active_hedges.append(hedge_trade)
                             hedge_activations += 1
+                            hedge_manager.hedge_activations += 1
                 
-                # Close all hedges if no active trades
+                # Close all hedges if no active trades (BUG #53 FIX)
                 if len(active_trades) == 0 and len(active_hedges) > 0:
                     for hedge in list(active_hedges):
                         if hedge['status'] == 'open':
-                            pnl = hedge['position_size'] * (hedge['entry_price'] - current_price)
+                            pnl = hedge_manager.calculate_hedge_pnl(hedge, current_price)
                             capital += hedge['position_value'] + pnl
                             
                             hedge['exit_price'] = current_price
@@ -356,6 +260,7 @@ def run_single_coin_backtest_worker(args):
                         'direction': direction,
                         'status': 'open',
                         'is_hedge': False,
+                        'hedging_used': 'yes',  # Hedging backtest mode
                         # Advanced strategy tracking fields
                         'trailing_stop': None,
                         'partial_closed': 0.0,
@@ -372,20 +277,38 @@ def run_single_coin_backtest_worker(args):
                         should_close, exit_price, exit_reason, partial_ratio = trading.check_trade_exit(trade, current_candle)
                         
                         if should_close:
-                            # Calculate PnL
-                            if trade['direction'] == 'long':
-                                pnl = (exit_price - trade['entry_price']) * trade['position_size'] * partial_ratio
-                            else:  # short
-                                pnl = (trade['entry_price'] - exit_price) * trade['position_size'] * partial_ratio
+                            # BUG #64 FIX: Calculate close_size from ORIGINAL position, not REMAINING
+                            # CRITICAL: For Partial TP, partial_ratio is based on ORIGINAL position
+                            # Example: Original=1.0, after 50% close remaining=0.5
+                            #          Next 25% close should be 0.25 of ORIGINAL (0.25 BTC), not 0.25 of remaining (0.125 BTC)!
+                            if partial_ratio == 1.0:
+                                # Full close - use current (remaining) position_size
+                                close_size = trade['position_size']
+                            else:
+                                # Partial close - use original_position_size if available
+                                if 'original_position_size' in trade:
+                                    close_size = trade['original_position_size'] * partial_ratio
+                                else:
+                                    # Fallback for trades without original_position_size (shouldn't happen)
+                                    close_size = trade['position_size'] * partial_ratio
                             
-                            # Return capital
-                            capital += trade['position_value'] * partial_ratio + pnl
+                            # Calculate PnL using close_size (not position_size * partial_ratio!)
+                            if trade['direction'] == 'long':
+                                pnl = (exit_price - trade['entry_price']) * close_size
+                            else:  # short
+                                pnl = (trade['entry_price'] - exit_price) * close_size
+                            
+                            # Calculate position_value being closed
+                            position_value_closed = trade['entry_price'] * close_size
+                            
+                            # Return capital (locked value + PnL)
+                            capital += position_value_closed + pnl
                             
                             # Partial close vagy full close
                             if partial_ratio < 1.0:
-                                # Partial close - reduce position
-                                trade['position_size'] *= (1 - partial_ratio)
-                                trade['position_value'] *= (1 - partial_ratio)
+                                # Partial close - reduce remaining position by close_size
+                                trade['position_size'] -= close_size
+                                trade['position_value'] -= position_value_closed
                                 
                                 # Log partial close
                                 partial_trade = trade.copy()
@@ -410,7 +333,32 @@ def run_single_coin_backtest_worker(args):
                 for idx in sorted(closed_trades, reverse=True):
                     active_trades.pop(idx)
                 
-                equity_curve.append(capital)
+                # BUG #51 FIX: Calculate equity and update peaks AFTER all exits (hedge + trade)
+                # This ensures consistent state for drawdown calculation and hedge activation
+                
+                # Calculate unrealized PnL from remaining positions
+                unrealized_main = sum(
+                    t['position_size'] * (current_price - t['entry_price'])
+                    for t in active_trades
+                    if not t.get('is_hedge', False)
+                )
+                
+                unrealized_hedge = sum(
+                    h['position_size'] * (h['entry_price'] - current_price)
+                    for h in active_hedges
+                    if h['status'] == 'open'
+                )
+                
+                equity = capital + unrealized_main + unrealized_hedge
+                
+                # Update peaks with current state
+                if capital > peak_capital:
+                    peak_capital = capital
+                
+                if equity > peak_equity:
+                    peak_equity = equity
+                
+                equity_curve.append(equity)
         
         # Calculate statistics
         combined_trades = all_trades + all_hedges

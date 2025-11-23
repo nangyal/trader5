@@ -105,7 +105,11 @@ class LiveWebSocketTrader:
         self.last_status_time = time.time()
         self.status_interval = 30  # 30s status update
         
-        print(f"\n✅ Trader initialized")
+        # BUG #37 FIX: Track last trade open time per coin to prevent duplicates
+        self.last_trade_open_time = {}  # coin -> timestamp
+        self.trade_open_cooldown = 60  # seconds - prevent same coin trade within 60s
+        
+        print(f"\n✅ WebSocket Trader initialized")
         print(f"   Coins: {', '.join(coins)}")
         print(f"   Timeframes: {', '.join(timeframes)}")
         print(f"   Max concurrent trades: {config.MAX_CONCURRENT_TRADES}")
@@ -301,12 +305,13 @@ class LiveWebSocketTrader:
         total_pnl = sum(t.total_pnl for t in self.traders.values())
         total_closed_trades = sum(len(t.closed_trades) for t in self.traders.values())
         
-        # Calculate total invested capital (all active positions)
+        # BUG #43 FIX: Calculate total invested capital using stored position_value
+        # Don't recalculate with current price - use original entry value
         total_invested = 0.0
         for trader in self.traders.values():
             for trade in trader.active_trades:
-                position_value = trade['position_size'] * trade['entry_price']
-                total_invested += position_value
+                # Use stored position_value from trade open
+                total_invested += trade['position_value']
         
         # Use shared capital pool
         pnl_pct = (total_pnl / self.initial_capital * 100) if self.initial_capital > 0 else 0.0
@@ -324,7 +329,8 @@ class LiveWebSocketTrader:
             print(f"\n📋 Nyitott pozíciók:")
             for coin, trader in self.traders.items():
                 for trade in trader.active_trades:
-                    position_value = trade['position_size'] * trade['entry_price']
+                    # Use stored position_value for consistency
+                    position_value = trade['position_value']
                     print(f"   • {trade['coin']} | "
                           f"{trade['position_size']:.4f} | "
                           f"${position_value:.2f} USDT | "
@@ -376,11 +382,15 @@ class LiveWebSocketTrader:
             
             # Check if this timestamp already exists (update) or new (append)
             if timestamp in df.index:
+                # BUG FIX #36: Check if already processed BEFORE updating
+                already_processed = timestamp in self.processed_candles[coin][timeframe]
+                
                 # Update existing candle (direct dict access)
                 self.kline_data[coin][timeframe].loc[timestamp] = new_row.iloc[0]
                 
                 # Check if candle is now closed and needs processing
-                if is_closed and timestamp not in self.processed_candles[coin][timeframe]:
+                # ONLY process if NOT already processed (prevent duplicate trades)
+                if is_closed and not already_processed:
                     self.processed_candles[coin][timeframe].add(timestamp)
                     # Keep only last 100 processed timestamps to save memory
                     if len(self.processed_candles[coin][timeframe]) > 100:
@@ -539,6 +549,16 @@ class LiveWebSocketTrader:
                 print(f"   ⛔ SKIP: Max concurrent trades reached (GLOBAL: {total_active_trades}/{config.MAX_CONCURRENT_TRADES})")
             return
         
+        # BUG #37 FIX: Check per-coin cooldown to prevent duplicate trades from multiple timeframes
+        current_time = time.time()
+        last_open_time = self.last_trade_open_time.get(coin, 0)
+        time_since_last_open = current_time - last_open_time
+        
+        if time_since_last_open < self.trade_open_cooldown:
+            if pattern != 'no_pattern':
+                print(f"   ⛔ SKIP: Trade cooldown active for {coin} ({time_since_last_open:.1f}s / {self.trade_open_cooldown}s)")
+            return
+        
         # Check if we should open trade (pattern/prob/strength filters)
         if not trader.should_open_trade(pattern, pattern_prob, pattern_strength):
             if pattern != 'no_pattern':
@@ -609,6 +629,9 @@ class LiveWebSocketTrader:
             # Sync to other traders
             self.sync_trader_capital()
             
+            # BUG #37 FIX: Update last trade open time for this coin
+            self.last_trade_open_time[coin] = time.time()
+            
             print(f"🟢 DEMO OPEN: {coin} {timeframe} | Pattern: {pattern} | "
                   f"Size: {position_size:.4f} (${position_value:.2f}) | "
                   f"Entry: ${entry_price:.2f} | SL: ${sl:.2f} | TP: ${tp:.2f} | "
@@ -643,6 +666,9 @@ class LiveWebSocketTrader:
                 
                 # Sync to other traders
                 self.sync_trader_capital()
+                
+                # BUG #37 FIX: Update last trade open time for this coin
+                self.last_trade_open_time[coin] = time.time()
                 
                 print(f"🟢 LIVE OPEN: {coin} {timeframe} | Pattern: {pattern} | "
                       f"Size: {position_size:.4f} (${position_value:.2f}) | "

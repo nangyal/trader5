@@ -208,7 +208,8 @@ class TradingLogic:
         position_size *= ml_multiplier
         
         # Cap position size to prevent over-leveraging
-        # With MAX_CONCURRENT_TRADES=3, max 33% per trade ensures 100% total usage
+        # With MAX_CONCURRENT_TRADES=3 and MAX_POSITION_SIZE_PCT=0.30:
+        # → Max total usage = 3 × 30% = 90% (10% buffer for safety)
         max_position_value = current_capital * self.config.MAX_POSITION_SIZE_PCT
         position_value = position_size * entry_price
         
@@ -290,6 +291,7 @@ class TradingLogic:
             'trailing_stop': None,  # For trailing stop
             'partial_closed': 0.0,  # Track partial closures
             'breakeven_activated': False,  # Track breakeven status
+            'hedging_used': 'no',  # Default: no hedging (can be overridden)
         }
         
         # Deduct capital used for this trade
@@ -551,7 +553,7 @@ class TradingLogic:
                     'timestamp', 'coin', 'action', 'direction', 'pattern', 'timeframe',
                     'entry_price', 'exit_price', 'stop_loss', 'take_profit',
                     'position_size', 'probability', 'strength',
-                    'exit_reason', 'pnl_usdt', 'total_pnl'
+                    'exit_reason', 'pnl_usdt', 'total_pnl', 'hedging_used'
                 ])
             
             # Write trade
@@ -571,7 +573,8 @@ class TradingLogic:
                 trade['strength'],
                 trade.get('exit_reason', ''),
                 trade.get('pnl', 0.0),
-                self.total_pnl
+                self.total_pnl,
+                trade.get('hedging_used', 'no')
             ])
     
     def get_statistics(self):
