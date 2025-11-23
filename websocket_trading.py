@@ -381,9 +381,10 @@ class WebSocketTrader:
                 print(f"[{self.coin}]   ⏭️  Skipped (trend misalignment)")
                 return
             
-            # Calculate position size
+            # BUG #68 FIX: Calculate position size WITH ml_probability
+            # ML confidence weighting: 65%+=1.0x, 75%+=1.25x, 85%+=1.5x
             position_size = self.trading.calculate_position_size(
-                current_price, sl, self.trading.capital
+                current_price, sl, self.trading.capital, ml_probability=probability
             )
             
             if position_size <= 0:

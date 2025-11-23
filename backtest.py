@@ -389,6 +389,77 @@ def run_backtest(coins, timeframes, num_workers=None):
     return results
 
 
+def save_results_to_excel(results):
+    """Excel report mentése backtest eredményekkel"""
+    # Convert to DataFrame
+    results_df = pd.DataFrame(results)
+    
+    # Handle missing columns
+    for col in ['total_trades', 'winning_trades', 'losing_trades', 'win_rate', 'return_pct', 'total_pnl']:
+        if col not in results_df.columns:
+            results_df[col] = 0
+        else:
+            results_df[col] = results_df[col].fillna(0)
+    
+    # Generate timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    excel_filename = f'backtest_report_{timestamp}.xlsx'
+    
+    print(f"\n📊 Excel report mentése: {excel_filename}")
+    
+    try:
+        # Create Excel writer
+        with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
+            # Sheet 1: Full Results
+            results_df.to_excel(writer, sheet_name='Results', index=False)
+            
+            # Sheet 2: Statistics
+            successful = results_df[results_df['status'] == 'completed']
+            
+            if len(successful) > 0:
+                total_trades = successful['total_trades'].sum()
+                winning_trades = successful['winning_trades'].sum()
+                losing_trades = successful['losing_trades'].sum()
+                total_pnl = successful['total_pnl'].sum()
+                avg_return = successful['return_pct'].mean()
+                max_return = successful['return_pct'].max()
+                min_return = successful['return_pct'].min()
+                
+                stats_data = {
+                    'Metric': [
+                        'Sikeres backtestek',
+                        'Összes trade',
+                        'Nyerő trade-ek',
+                        'Vesztő trade-ek',
+                        'Win rate',
+                        'Összes P&L',
+                        'Átlagos hozam',
+                        'Legjobb hozam',
+                        'Legrosszabb hozam'
+                    ],
+                    'Value': [
+                        len(successful),
+                        int(total_trades),
+                        int(winning_trades),
+                        int(losing_trades),
+                        f"{(winning_trades / total_trades * 100):.2f}%" if total_trades > 0 else '0%',
+                        f"${total_pnl:.2f}",
+                        f"{avg_return:.2f}%",
+                        f"{max_return:.2f}%",
+                        f"{min_return:.2f}%"
+                    ]
+                }
+                stats_df = pd.DataFrame(stats_data)
+                stats_df.to_excel(writer, sheet_name='Statistics', index=False)
+        
+        print(f"✅ Excel report mentve: {excel_filename}")
+        return excel_filename
+    
+    except Exception as e:
+        print(f"❌ Excel mentés hiba: {e}")
+        return None
+
+
 if __name__ == '__main__':
     # Test run
     config.ensure_dirs()
@@ -404,3 +475,6 @@ if __name__ == '__main__':
         print(f"\n{result['coin']}: {result['status']}")
         if result['status'] == 'completed':
             print(f"  Trades: {result['total_trades']}, Return: {result['return_pct']:.2f}%")
+    
+    # Save to Excel
+    save_results_to_excel(results)
