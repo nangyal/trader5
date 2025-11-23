@@ -72,10 +72,13 @@ class LiveWebSocketTrader:
         self.shared_capital = 0.0
         self.initial_capital = 0.0
         
+        print("\n🔧 DEBUG: Initializing trading logic...")
         # Trading logic per coin
         self.traders = {}
         for coin in coins:
+            print(f"   Creating trader for {coin}")
             self.traders[coin] = TradingLogic(config)
+        print(f"   ✅ {len(self.traders)} traders initialized")
         
         # OHLCV data storage: {coin: {timeframe: DataFrame}}
         self.kline_data = defaultdict(lambda: defaultdict(lambda: pd.DataFrame()))
@@ -298,6 +301,13 @@ class LiveWebSocketTrader:
         total_pnl = sum(t.total_pnl for t in self.traders.values())
         total_closed_trades = sum(len(t.closed_trades) for t in self.traders.values())
         
+        # Calculate total invested capital (all active positions)
+        total_invested = 0.0
+        for trader in self.traders.values():
+            for trade in trader.active_trades:
+                position_value = trade['position_size'] * trade['entry_price']
+                total_invested += position_value
+        
         # Use shared capital pool
         pnl_pct = (total_pnl / self.initial_capital * 100) if self.initial_capital > 0 else 0.0
         
@@ -305,6 +315,7 @@ class LiveWebSocketTrader:
         print(f"📊 LIVE TRADING STATUS - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("="*80)
         print(f"💰 Shared capital: ${self.shared_capital:.2f} USDT")
+        print(f"💵 Befektetett tőke: ${total_invested:.2f} USDT")
         print(f"📈 Összes P&L: ${total_pnl:.2f} USDT ({pnl_pct:+.2f}%)")
         print(f"🔄 Aktív kereskedések: {total_active_trades}")
         print(f"✅ Lezárt kereskedések: {total_closed_trades}")
@@ -420,7 +431,6 @@ class LiveWebSocketTrader:
         
         # Check trading hours (csak nappal kereskedik)
         if self.config.TRADING_HOURS['enable']:
-            from datetime import datetime
             current_hour = datetime.utcnow().hour
             start_hour = self.config.TRADING_HOURS['start_hour']
             end_hour = self.config.TRADING_HOURS['end_hour']

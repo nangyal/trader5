@@ -1,0 +1,363 @@
+✅ Könyvtárak létrehozva/ellenőrizve
+
+================================================================================
+🚀 CRYPTO TRADING FRAMEWORK
+================================================================================
+
+📋 Konfiguráció:
+   Adatforrás: websocket
+   Coinok: BTCUSDT, ETHUSDT
+   Timeframes: 15s, 30s, 1min, 5min, 15min, 30min
+   Workers: 28
+
+🌐 WebSocket Beállítások:
+   Binance WS: wss://stream.binance.com:9443/ws
+   Demo Mode: True
+   Model: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+
+================================================================================
+WEBSOCKET LIVE TRADING MÓD
+================================================================================
+
+⚠️  FIGYELEM: Live trading mód!
+✅ DEMO/TESTNET mód - biztonságos tesztelés
+
+================================================================================
+🚀 LIVE WEBSOCKET TRADING INDÍTÁSA
+================================================================================
+⚠️  DEMO MODE - Paper trading (no real orders)
+   Using DEMO API for balance + MAINNET WebSocket for prices
+
+📦 Loading ML model...
+Model loaded from /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl (device: CPU)
+✅ Model loaded: /home/nangyal/Desktop/v5/models/enhanced_forex_pattern_model.pkl
+
+🔧 DEBUG: Initializing trading logic...
+   Creating trader for BTCUSDT
+   Creating trader for ETHUSDT
+   ✅ 2 traders initialized
+
+✅ Trader initialized
+   Coins: BTCUSDT, ETHUSDT
+   Timeframes: 15s, 30s, 1min, 5min, 15min, 30min
+   Max concurrent trades: 3
+   Max position size: 33.0%
+
+💼 Account balances:
+   BTC: Free: 0.06000000 | Locked: 0.00000000 | Total: 0.06000000
+   BNB: Free: 0.00000083 | Locked: 0.00000000 | Total: 0.00000083
+   USDT: Free: 7046.57607221 | Locked: 0.00000000 | Total: 7046.57607221
+
+💰 Shared capital pool: $7046.58 USDT
+
+📊 Loading historical kline data...
+   Loading BTCUSDT 1s for resampling... ✅ 1000 candles
+   Loading ETHUSDT 1s for resampling... ✅ 1000 candles
+   Generating BTCUSDT 15s from 1s... ✅ 68 candles
+   Generating BTCUSDT 30s from 1s... ✅ 35 candles
+   Loading BTCUSDT 1min... ✅ 1000 candles
+   Loading BTCUSDT 5min... ✅ 1000 candles
+   Loading BTCUSDT 15min... ✅ 1000 candles
+   Loading BTCUSDT 30min... ✅ 1000 candles
+   Generating ETHUSDT 15s from 1s... ✅ 68 candles
+   Generating ETHUSDT 30s from 1s... ✅ 35 candles
+   Loading ETHUSDT 1min... ✅ 1000 candles
+   Loading ETHUSDT 5min... ✅ 1000 candles
+   Loading ETHUSDT 15min... ✅ 1000 candles
+   Loading ETHUSDT 30min... ✅ 1000 candles
+✅ Historical data loaded for all pairs
+
+🌐 Connecting to WebSocket...
+   URL: wss://stream.binance.com:9443/stream?streams=btcusdt@kline_15s/btcusdt@kline_30s...
+   Streams: 12
+✅ WebSocket connected!
+📥 First WS message received: {'stream': 'btcusdt@kline_1m', 'data': {'e': 'kline', 'E': 1763887816022, 's': 'BTCUSDT', 'k': {'t': 1763887800000, 'T': 1763887859999, 's': 'BTCUSDT', 'i': '1m', 'f': 5553444917, 'L': 5553445400, 'o'...
+📊 Kline update: BTCUSDT 1min | Candles: 1000 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 1000 | Closed: False
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:50:40
+================================================================================
+💰 Shared capital: $7046.58 USDT
+💵 Befektetett tőke: $0.00 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 0
+✅ Lezárt kereskedések: 0
+================================================================================
+
+📊 Kline update: BTCUSDT 30min | Candles: 1000 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 1000 | Closed: False�📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:50:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 1000�📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:50:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles: 1000
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:51:12
+================================================================================
+💰 Shared capital: $7046.58 USDT
+💵 Befektetett tőke: $0.00 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 0
+✅ Lezárt kereskedések: 0
+================================================================================
+
+📊 Kline update: BTCUSDT 5min | Candles: 1000 | Closed: False
+📊 Kline update: ETHUSDT 5min | Candles: 1000 | Closed: Fal
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:51:42
+================================================================================
+💰 Shared capital: $7046.58 USDT
+💵 Befektetett tőke: $0.00 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 0
+✅ Lezárt kereskedések: 0
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: Fal�📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:51:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 2�📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:51:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles: 2
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:52:12
+================================================================================
+💰 Shared capital: $7046.58 USDT
+💵 Befektetett tőke: $0.00 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 0
+✅ Lezárt kereskedések: 0
+===============================================================================�📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: Fal
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:52:44
+================================================================================
+💰 Shared capital: $7046.58 USDT
+💵 Befektetett tőke: $0.00 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 0
+✅ Lezárt kereskedések: 0
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: Fal�📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:52:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 2
+�
+🔍 PATTERN DETECTED: BTCUSDT 1min
+   Pattern: ascending_triangle
+   Probability: 0.571
+   Strength: 0.571
+🟢 DEMO OPEN: BTCUSDT 1min | Pattern: ascending_triangle | Size: 0.0270 ($2325.37) | Entry: $85998.77 | SL: $85568.78 | TP: $87718.75 | Shared Capital: $4721.�📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:52:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles: 2
+�
+🔍 PATTERN DETECTED: ETHUSDT 1min
+   Pattern: ascending_triangle
+   Probability: 0.594
+   Strength: 0.594
+🟢 DEMO OPEN: ETHUSDT 1min | Pattern: ascending_triangle | Size: 0.5546 ($1558.00) | Entry: $2809.38 | SL: $2795.33 | TP: $2865.57 | Shared Capital: $3163.
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:53:14
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: Fal
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:53:44
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: False
+📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:53:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 200
+📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:53:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles: 200
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:54:14
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+================================================================================
+
+📊 Kline update: BTCUSDT 15min | Candles: 1000 | Closed: False
+📊 Kline update: ETHUSDT 15min | Candles: 1000 | Closed: False
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:54:44
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+================================================================================
+�📊 Kline update: BTCUSDT 30min | Candles: 1000 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: Fal�📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:54:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 2�📌 RAW CANDLE CLOSE: BTCUSDT 5min | x=True | timestamp=2025-11-23 08:50:00
+🔔 CANDLE CLOSED: BTCUSDT 5min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 5min | Candles: 10�📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:54:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles: 2�📌 RAW CANDLE CLOSE: ETHUSDT 5min | x=True | timestamp=2025-11-23 08:50:00
+🔔 CANDLE CLOSED: ETHUSDT 5min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 5min | Candles: 10
+==
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:55:14
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+===============================================================================�📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: False
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:55:44
+================================================================================
+💰 Shared capital: $3163.21 USDT
+💵 Befektetett tőke: $3883.37 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 2
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: False
+📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08:55:00
+🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candles: 200
+📌 📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:55:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candles:
+🔍
+🔍 PATTERN DETECTED: ETHUSDT 1min
+   Pattern: ascending_triangle
+   Probability: 0.602
+   Strength: 0.602
+🟢 DEMO OPEN: ETHUSDT 1min | Pattern: ascending_triangle | Size: 0.3715 ($1043.86) | Entry: $2810.04 | SL: $2795.99 | TP: $2866.24 | Shared Capital: $211
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:56:14
+================================================================================
+💰 Shared capital: $2119.35 USDT
+💵 Befektetett tőke: $4927.23 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 3
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+   • ETHUSDT | 0.3715 | $1043.86 USDT | Pattern: ascending_triangle | Entry: $2810.04
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 5min | Candles: 200 | Closed: False
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:56:44
+================================================================================
+💰 Shared capital: $2119.35 USDT
+💵 Befektetett tőke: $4927.23 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 3
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+   • ETHUSDT | 0.3715 | $1043.86 USDT | Pattern: ascending_triangle | Entry: $2810.04
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 1min | Candles: 200 | Closed: False
+📌 RA📌 RAW CANDLE CLOSE: BTCUSDT 1min | x=True | timestamp=2025-11-23 08🔔 CA🔔 CANDLE CLOSED: BTCUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: BTCUSDT 1min | Candle📌 RA📌 RAW CANDLE CLOSE: ETHUSDT 1min | x=True | timestamp=2025-11-23 08:56:00
+🔔 CANDLE CLOSED: ETHUSDT 1min | Processing trading logic...
+🔍 process_closed_candle called: ETHUSDT 1min | Candle
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:57:16
+================================================================================
+💰 Shared capital: $2119.35 USDT
+💵 Befektetett tőke: $4927.23 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 3
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+   • ETHUSDT | 0.3715 | $1043.86 USDT | Pattern: ascending_triangle | Entry: $2810.04
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 5min | Candles: 200 | Closed: False
+
+================================================================================
+📊 LIVE TRADING STATUS - 2025-11-23 09:57:46
+================================================================================
+💰 Shared capital: $2119.35 USDT
+💵 Befektetett tőke: $4927.23 USDT
+📈 Összes P&L: $0.00 USDT (+0.00%)
+🔄 Aktív kereskedések: 3
+✅ Lezárt kereskedések: 0
+
+📋 Nyitott pozíciók:
+   • BTCUSDT | 0.0270 | $2325.37 USDT | Pattern: ascending_triangle | Entry: $85998.77
+   • ETHUSDT | 0.5546 | $1558.00 USDT | Pattern: ascending_triangle | Entry: $2809.38
+   • ETHUSDT | 0.3715 | $1043.86 USDT | Pattern: ascending_triangle | Entry: $2810.04
+================================================================================
+
+📊 Kline update: BTCUSDT 1min | Candles: 200 | Closed: False
+📊 Kline update: ETHUSDT 5min | Candles: 200 | Closed: False
+ False
