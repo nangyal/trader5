@@ -235,6 +235,12 @@ def run_single_coin_backtest(args):
                 
                 # Check if we should open trade
                 if trading.should_open_trade(pattern, pattern_prob, pattern_strength):
+                    # BUG FIX #33: Check MAX_CONCURRENT_TRADES limit (same as live trading)
+                    if len(trading.active_trades) >= config.MAX_CONCURRENT_TRADES:
+                        # Skip this trade - max concurrent limit reached
+                        # Don't process exit logic either to save time
+                        continue
+                    
                     # Get recent data for trend calc
                     recent_data = df_ohlcv.iloc[max(0, i-30):i+1]
                     
