@@ -110,15 +110,16 @@ def main():
                 sys.exit(0)
         
         # Run WebSocket trading
-        from websocket_trading import run_websocket_trading
+        import asyncio
+        from websocket_live_trading import run_live_websocket_trading
         
-        run_websocket_trading(
+        asyncio.run(run_live_websocket_trading(
             coins=config.COINS,
             timeframes=config.TIMEFRAMES,
             api_key=config.BINANCE_API_KEY,
             api_secret=config.BINANCE_API_SECRET,
             demo_mode=config.BINANCE_DEMO_MODE
-        )
+        ))
 
     else:
         print(f"\n❌ Ismeretlen DATA_SOURCE: {config.DATA_SOURCE}")

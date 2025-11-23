@@ -68,8 +68,17 @@ BINANCE_WS = 'wss://stream.binance.com:9443/ws'
 BINANCE_API_KEY = '9fapGQP3fbdv4Df9bNDPAjEsxtgDQLw59X9gdZRsZPHiNZwooOTaSRQdIZwrTon2'
 BINANCE_API_SECRET = 'Yl7c2AqSkL50v10Sv0qe9ZEClNo65KbBc57cmqzuxnYtfi6HiOZicSQBuXN5UrCk'
 
-# DEMO mode engedélyezése (True = testnet, False = mainnet)
+# DEMO mode engedélyezése (True = demo, False = mainnet)
 BINANCE_DEMO_MODE = True
+
+# Trading hours - csak nappal kereskedik (UTC időzóna)
+# FIGYELEM: DEMO módban automatikusan kikapcsolva (24/7 trading)
+TRADING_HOURS = {
+    'enable': False,  # Kikapcsolva ha DEMO mode aktív
+    'start_hour': 6,   # 06:00 UTC (8:00 magyar idő)
+    'end_hour': 20,    # 20:00 UTC (22:00 magyar idő)
+    'timezone': 'UTC'
+}
 
 # ============================================================================
 # RISK MANAGEMENT & TRADING LOGIKA BEÁLLÍTÁSOK
@@ -152,9 +161,9 @@ PATTERN_TARGETS = {
 # ============================================================================
 
 TREND_ALIGNMENT = {
-    'enable': True,  # Re-enable for better win rate
+    'enable': False,  # DISABLED - túl szigorú! (2328 → 126 trades-re csökkentette!)
     'lookback_period': 20,
-    'use_ema_filter': True,  # Re-enable EMA filter
+    'use_ema_filter': False,  # DISABLED - EMA filter túl szigorú!
     'ema_period': 50,
     # OPTIMIZED: Több pattern = több trade opportunity
     'bullish_patterns': ['ascending_triangle', 'symmetrical_triangle', 'cup_and_handle', 'flag_bullish', 'double_bottom'],
@@ -166,9 +175,9 @@ TREND_ALIGNMENT = {
 # ============================================================================
 
 VOLATILITY_FILTER = {
-    'enable': True,  # Re-enable
+    'enable': False,  # DISABLED - túl szigorú! (2328 → 126 trades-re csökkentette!)
     'atr_period': 14,
-    'min_atr_pct': 0.3,  # 0.3% reasonable threshold
+    'min_atr_pct': 0.005,  # 0.5% (decimal format, NOT percentage)
 }
 
 # ============================================================================
@@ -176,8 +185,8 @@ VOLATILITY_FILTER = {
 # ============================================================================
 
 PATTERN_FILTERS = {
-    'min_probability': 0.65,   # Min 65% ML konfidencia
-    'min_strength': 0.65,      # Min 65% pattern erősség
+    'min_probability': 0.50,   # Min 50% ML konfidencia (visszaállítva 0.65-ről - túl szigorú volt!)
+    'min_strength': 0.50,      # Min 50% pattern erősség (visszaállítva 0.65-ről - túl szigorú volt!)
     'blacklist_patterns': []  # Kizárt patternek
 }
 
@@ -225,9 +234,9 @@ TRAILING_STOP = {
 PARTIAL_TP = {
     'enable': True,
     'levels': [
-        {'pct': 0.015, 'close_ratio': 0.50},  # +1.5% → close 50%
-        {'pct': 0.025, 'close_ratio': 0.30},  # +2.5% → close 30%
-        {'pct': 0.040, 'close_ratio': 0.20},  # +4.0% → close 20%
+        {'pct': 0.015, 'close_ratio': 0.50},  # +1.5% → close 50% (cumulative)
+        {'pct': 0.025, 'close_ratio': 0.75},  # +2.5% → close 75% (cumulative)
+        {'pct': 0.040, 'close_ratio': 1.00},  # +4.0% → close 100% (cumulative)
     ]
 }
 

@@ -328,8 +328,9 @@ def run_single_coin_backtest_worker(args):
                     elif current_drawdown > 0.10:
                         risk_multiplier = 0.75
                     
+                    # Calculate position size (with ML confidence weighting)
                     position_size = trading.calculate_position_size(
-                        entry_price, sl, capital, risk_multiplier
+                        entry_price, sl, capital, risk_multiplier, ml_probability=pattern_prob
                     )
                     
                     if position_size <= 0:

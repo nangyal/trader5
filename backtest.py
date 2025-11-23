@@ -248,9 +248,9 @@ def run_single_coin_backtest(args):
                     if direction == 'skip':
                         continue
                     
-                    # Calculate position size
+                    # Calculate position size (with ML confidence weighting)
                     position_size = trading.calculate_position_size(
-                        entry_price, sl, trading.capital
+                        entry_price, sl, trading.capital, ml_probability=pattern_prob
                     )
                     
                     if position_size <= 0:
