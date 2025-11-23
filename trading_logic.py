@@ -272,6 +272,12 @@ class TradingLogic:
         # Note: ML confidence weighting already applied in calculate_position_size()
         position_value = entry_price * position_size
         
+        # BUG FIX #71: Deduct entry commission
+        entry_commission = 0.0
+        if self.config.TRADING_COMMISSION['enable']:
+            entry_commission = position_value * self.config.TRADING_COMMISSION['percent']
+            self.capital -= entry_commission
+        
         trade = {
             'coin': coin,
             'pattern': pattern,
@@ -292,6 +298,7 @@ class TradingLogic:
             'partial_closed': 0.0,  # Track partial closures
             'breakeven_activated': False,  # Track breakeven status
             'hedging_used': 'no',  # Default: no hedging (can be overridden)
+            'entry_commission': entry_commission  # Track commission paid
         }
         
         # Deduct capital used for this trade
@@ -343,6 +350,7 @@ class TradingLogic:
             # PRIORITY 1: REGULAR STOP LOSS & TAKE PROFIT
             # Check these FIRST with proper OHLC order
             # NOTE: If Partial TP enabled, only check SL (TP managed by Partial TP)
+            # BUG FIX #72: Use OPEN price for gap-through scenarios (slippage)
             # ========================================
             
             # Determine if candle is bullish or bearish
@@ -353,26 +361,39 @@ class TradingLogic:
                 # Check TP first (high) ONLY if Partial TP disabled
                 if not self.partial_tp['enable']:
                     if current_candle['high'] >= trade['take_profit']:
+                        # BUG FIX #72: If gap-through (open > TP), use open price
+                        if current_candle['open'] >= trade['take_profit']:
+                            return True, current_candle['open'], 'take_profit', 1.0
                         return True, trade['take_profit'], 'take_profit', 1.0
                 
                 # Always check SL
                 if current_candle['low'] <= trade['stop_loss']:
+                    # BUG FIX #72: If gap-through (open < SL), use open price (worse fill)
+                    if current_candle['open'] <= trade['stop_loss']:
+                        return True, current_candle['open'], 'stop_loss', 1.0
                     return True, trade['stop_loss'], 'stop_loss', 1.0
             else:
                 # Bearish candle: price went DOWN first, then possibly up
                 # Always check SL first
                 if current_candle['low'] <= trade['stop_loss']:
+                    # BUG FIX #72: If gap-through (open < SL), use open price (worse fill)
+                    if current_candle['open'] <= trade['stop_loss']:
+                        return True, current_candle['open'], 'stop_loss', 1.0
                     return True, trade['stop_loss'], 'stop_loss', 1.0
                 
                 # Check TP ONLY if Partial TP disabled
                 if not self.partial_tp['enable']:
                     if current_candle['high'] >= trade['take_profit']:
+                        # BUG FIX #72: If gap-through (open > TP), use open price
+                        if current_candle['open'] >= trade['take_profit']:
+                            return True, current_candle['open'], 'take_profit', 1.0
                         return True, trade['take_profit'], 'take_profit', 1.0
             
             # ========================================
             # PRIORITY 2: PARTIAL TAKE PROFIT
             # Only if regular TP/SL not hit
             # Check using OHLC data (like Regular TP/SL)
+            # BUG FIX #72: Use OPEN price for gap-through scenarios
             # ========================================
             if self.partial_tp['enable']:
                 for level in self.partial_tp['levels']:
@@ -393,20 +414,29 @@ class TradingLogic:
                             # Update partial_closed tracking
                             trade['partial_closed'] = cumulative_close_ratio
                             
+                            # BUG FIX #72: If gap-through (open > partial TP), use open
+                            actual_exit_price = partial_tp_price
+                            if current_candle['open'] >= partial_tp_price:
+                                actual_exit_price = current_candle['open']
+                            
                             # CRITICAL: If final level (1.0), return 1.0 to trigger full close
                             # This ensures trade is properly removed from active_trades
                             if cumulative_close_ratio >= 1.0:
-                                return True, partial_tp_price, f"partial_tp_{target_pct*100:.1f}%", 1.0
+                                return True, actual_exit_price, f"partial_tp_{target_pct*100:.1f}%", 1.0
                             
-                            # Exit at Partial TP price (NOT current_price!)
-                            return True, partial_tp_price, f"partial_tp_{target_pct*100:.1f}%", close_ratio
+                            # Exit at Partial TP price (or OPEN if gap-through)
+                            return True, actual_exit_price, f"partial_tp_{target_pct*100:.1f}%", close_ratio
             
             # ========================================
             # PRIORITY 3: TRAILING STOP
             # Check if trailing stop hit BEFORE updating it
+            # BUG FIX #72: Use OPEN price for gap-through scenarios
             # ========================================
             if trade['trailing_stop'] is not None:
                 if current_candle['low'] <= trade['trailing_stop']:
+                    # BUG FIX #72: If gap-through (open < trailing), use open (worse fill)
+                    if current_candle['open'] <= trade['trailing_stop']:
+                        return True, current_candle['open'], 'trailing_stop', 1.0
                     return True, trade['trailing_stop'], 'trailing_stop', 1.0
             
             # ========================================
@@ -463,9 +493,29 @@ class TradingLogic:
         # Calculate position value being closed
         position_value_closed = trade['entry_price'] * close_size
         
+        # BUG FIX #71: Deduct exit commission
+        exit_commission = 0.0
+        if self.config.TRADING_COMMISSION['enable']:
+            # Commission calculated on exit value (entry_price * size for consistency)
+            # In reality it's on exit_price, but this simplifies partial close tracking
+            exit_value = exit_price * close_size
+            exit_commission = exit_value * self.config.TRADING_COMMISSION['percent']
+            self.capital -= exit_commission
+        
         # CRITICAL FIX: Return position value + PnL
         self.capital += position_value_closed + pnl
-        self.total_pnl += pnl
+        
+        # Adjust total PnL to account for commissions
+        net_pnl = pnl - exit_commission
+        if partial_ratio == 1.0:
+            # Full close - also deduct proportional entry commission
+            net_pnl -= trade.get('entry_commission', 0.0)
+        else:
+            # Partial close - deduct proportional entry commission
+            proportional_entry_commission = trade.get('entry_commission', 0.0) * partial_ratio
+            net_pnl -= proportional_entry_commission
+        
+        self.total_pnl += net_pnl
         
         # Update losing streak tracking
         if self.losing_streak_protection['enable']:

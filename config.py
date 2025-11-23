@@ -105,54 +105,71 @@ MAX_CONCURRENT_TRADES = 3  # 3 parallel trades max (3 × 30% = 90% max capital u
 MAX_POSITION_SIZE_PCT = 0.30  # 30% - allows 90% total usage, 10% buffer for safety
 
 # ============================================================================
+# TRADING COSTS (COMMISSIONS & FEES)
+# ============================================================================
+
+# Trading commission settings
+TRADING_COMMISSION = {
+    'enable': True,
+    'percent': 0.001,  # 0.1% per trade (Binance standard spot/futures fee)
+    'calculate_both_sides': True,  # True = charge on entry AND exit (0.2% total)
+}
+
+# Slippage simulation (optional, more relevant for high volatility)
+SLIPPAGE = {
+    'enable': False,  # Disabled by default
+    'percent': 0.0005,  # 0.05% slippage
+}
+
+# ============================================================================
 # PATTERN TARGETS (STOP LOSS & TAKE PROFIT)
 # ============================================================================
 
-# OPTIMIZED pattern targets - 2% TP PROVEN TO WORK!
+# OPTIMIZED pattern targets - ADJUSTED for commission costs
 PATTERN_TARGETS = {
     'ascending_triangle': {
-        'sl_pct': 0.005,  # -0.5% (proven)
-        'tp_pct': 0.020   # +2.0% (proven, 1:4 R/R)
+        'sl_pct': 0.008,  # -0.8% (wider to survive commission + noise)
+        'tp_pct': 0.012   # +1.2% (more achievable, 1:1.5 R/R)
     },
     'descending_triangle': {
-        'sl_pct': 0.005,
-        'tp_pct': 0.020
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'symmetrical_triangle': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'double_top': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'double_bottom': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'head_and_shoulders': {
-        'sl_pct': 0.007,
-        'tp_pct': 0.028
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'cup_and_handle': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'wedge_rising': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'wedge_falling': {
-        'sl_pct': 0.006,
-        'tp_pct': 0.024
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'flag_bullish': {
-        'sl_pct': 0.005,
-        'tp_pct': 0.020
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     },
     'flag_bearish': {
-        'sl_pct': 0.005,
-        'tp_pct': 0.020
+        'sl_pct': 0.008,
+        'tp_pct': 0.012
     }
 }
 
@@ -185,8 +202,8 @@ VOLATILITY_FILTER = {
 # ============================================================================
 
 PATTERN_FILTERS = {
-    'min_probability': 0.50,   # Min 50% ML konfidencia (visszaállítva 0.65-ről - túl szigorú volt!)
-    'min_strength': 0.50,      # Min 50% pattern erősség (visszaállítva 0.65-ről - túl szigorú volt!)
+    'min_probability': 0.60,   # Min 60% ML konfidencia (higher quality signals)
+    'min_strength': 0.55,      # Min 55% pattern erősség
     'blacklist_patterns': []  # Kizárt patternek
 }
 
@@ -225,7 +242,7 @@ HEDGING = {
 
 # Trailing Stop Loss - profitot követő stop loss
 TRAILING_STOP = {
-    'enable': True,
+    'enable': False,  # DISABLED - causes premature exits before TP
     'activation_pct': 0.010,  # +1.0% profit után aktiválódik
     'trail_pct': 0.005,  # 0.5% trailing distance
 }
@@ -234,9 +251,9 @@ TRAILING_STOP = {
 PARTIAL_TP = {
     'enable': True,
     'levels': [
-        {'pct': 0.015, 'close_ratio': 0.50},  # +1.5% → close 50% (cumulative)
-        {'pct': 0.025, 'close_ratio': 0.75},  # +2.5% → close 75% (cumulative)
-        {'pct': 0.040, 'close_ratio': 1.00},  # +4.0% → close 100% (cumulative)
+        {'pct': 0.008, 'close_ratio': 0.50},  # +0.8% → close 50% (cumulative)
+        {'pct': 0.012, 'close_ratio': 0.75},  # +1.2% → close 75% (cumulative)
+        {'pct': 0.018, 'close_ratio': 1.00},  # +1.8% → close 100% (cumulative)
     ]
 }
 

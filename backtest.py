@@ -230,23 +230,40 @@ def run_single_coin_backtest(args):
                 pattern_prob = prob_max[i]
                 pattern_strength = pattern_strengths[i]
                 
+                # BUG FIX #70: FIX LOOK-AHEAD BIAS
+                # Process exit logic FIRST for existing trades (using current candle)
+                # Then check entry signals (new trades start on NEXT candle)
+                
+                # Check active trades for exit (using current candle data)
+                for trade in list(trading.active_trades):
+                    should_close, exit_price, exit_reason, partial_ratio = trading.check_trade_exit(trade, current_candle)
+                    
+                    if should_close:
+                        pnl = trading.close_trade(trade, exit_price, exit_reason, current_candle.name, partial_ratio or 1.0)
+                
                 # OPTIMIZED: Engedélyezzük a descending patternt is (LONG strategy downtrend-ben)
                 # Az old2-ben ez 42% win rate-et hozott!
                 
-                # Check if we should open trade
+                # Check if we should open trade (SIGNAL on current candle, ENTRY on next)
                 if trading.should_open_trade(pattern, pattern_prob, pattern_strength):
                     # BUG FIX #33: Check MAX_CONCURRENT_TRADES limit (same as live trading)
                     if len(trading.active_trades) >= config.MAX_CONCURRENT_TRADES:
                         # Skip this trade - max concurrent limit reached
-                        # Don't process exit logic either to save time
                         continue
                     
-                    # Get recent data for trend calc
+                    # BUG FIX #70: Entry happens at NEXT candle's OPEN (not current close)
+                    # This prevents look-ahead bias
+                    if i + 1 >= len(df_ohlcv):
+                        # No next candle, skip trade
+                        continue
+                    
+                    next_candle = df_ohlcv.iloc[i + 1]
+                    entry_price = next_candle['open']  # ENTER AT NEXT OPEN
+                    
+                    # Get recent data for trend calc (up to current candle, not including next)
                     recent_data = df_ohlcv.iloc[max(0, i-30):i+1]
                     
-                    entry_price = current_candle['close']
-                    
-                    # Calculate targets
+                    # Calculate targets (based on entry at next open)
                     sl, tp, direction, params = trading.calculate_pattern_targets(
                         pattern, entry_price, current_candle, recent_data
                     )
@@ -262,7 +279,7 @@ def run_single_coin_backtest(args):
                     if position_size <= 0:
                         continue
                     
-                    # Open trade
+                    # Open trade (entry_time = next candle timestamp)
                     trade = trading.open_trade(
                         coin=coin,
                         pattern=pattern,
@@ -273,15 +290,8 @@ def run_single_coin_backtest(args):
                         probability=pattern_prob,
                         strength=pattern_strength,
                         timeframe=timeframe,
-                        entry_time=current_candle.name
+                        entry_time=next_candle.name  # Entry at NEXT candle
                     )
-                
-                # Check active trades for exit
-                for trade in list(trading.active_trades):
-                    should_close, exit_price, exit_reason, partial_ratio = trading.check_trade_exit(trade, current_candle)
-                    
-                    if should_close:
-                        pnl = trading.close_trade(trade, exit_price, exit_reason, current_candle.name, partial_ratio or 1.0)
                 
                 # Decrement cooldown counter
                 if trading.cooldown_until_candle > 0:

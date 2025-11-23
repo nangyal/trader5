@@ -453,14 +453,20 @@ class WebSocketTrader:
                 
                 # Check all active trades
                 for trade in list(self.trading.active_trades):
-                    should_close, exit_price, exit_reason = self.trading.check_trade_exit(
+                    # BUG #69 FIX: check_trade_exit returns 4 values (including partial_ratio)
+                    should_close, exit_price, exit_reason, partial_ratio = self.trading.check_trade_exit(
                         trade, current_candle
                     )
                     
                     if should_close:
-                        pnl = self.trading.close_trade(trade, exit_price, exit_reason)
+                        # Pass partial_ratio to close_trade for partial TP support
+                        pnl = self.trading.close_trade(
+                            trade, exit_price, exit_reason, partial_ratio=partial_ratio
+                        )
                         
-                        print(f"\n[{self.coin}] 🔔 TRADE CLOSED - {exit_reason.upper()}")
+                        close_type = "PARTIAL" if partial_ratio < 1.0 else "FULL"
+                        print(f"\n[{self.coin}] 🔔 TRADE {close_type} CLOSED - {exit_reason.upper()}")
+                        print(f"[{self.coin}]    Closed: {partial_ratio*100:.0f}%")
                         print(f"[{self.coin}]    P&L: {pnl:+.2f} USDT")
                         print(f"[{self.coin}]    Capital: ${self.trading.capital:.2f}")
                 
